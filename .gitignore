@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+.sicode/
 
 # Object files
 *.o
