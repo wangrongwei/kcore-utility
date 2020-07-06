@@ -1,3 +1,7 @@
+/*
+ * A tool for reading kernel source
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -34,14 +38,14 @@ static const struct option longopts[] = {
 	{ "summary-only",	no_argument,	   0, 'c' },
 	{ "summary",		no_argument,	   0, 'C' },
 	{ "debug",		no_argument,	   0, 'd' },
-	{ "env",		required_argument, 0, 'E' },
+	{ "func",		required_argument, 0, 'f' }, /* find func */
 	{ "help",		no_argument,	   0, 'h' },
 	{ "instruction-pointer", no_argument,      0, 'i' },
 	{ "stack-traces",	no_argument,	   0, 'k' },
 	{ "output",		required_argument, 0, 'o' },
 	{ "attach",		required_argument, 0, 'p' },
 	{ "trace-path",		required_argument, 0, 'P' },
-	{ "string-limit",	required_argument, 0, 's' },
+	{ "macro",		required_argument, 0, 'm' }, /* analy the value of specify macro */
 	{ "summary-sort-by",	required_argument, 0, 'S' },
 	{ "user",		required_argument, 0, 'u' },
 	{ "no-abbrev",		no_argument,	   0, 'v' },
@@ -64,11 +68,16 @@ static const struct option longopts[] = {
 /* the base address of kernel source */
 char *base_path;
 
-static void usage(void)
+static void __attribute__((__noreturn__)) usage(void)
 {
+	FILE *out = stdio;
+	fputs(_(" -a, --all		print\n"), out);
+	fputs(_(" -f, --func		find func\n"), out);
+	fputs(_(" -m, --macro		analy the value for specify MACRO\n"), out);
 	fprintf(stdout,
 		"kread --help")
-	exit(0);
+
+	exit(EXIT_SUCCESS);
 }
 
 /*
@@ -122,6 +131,11 @@ static void init(int argc, char *argv[])
 			break;
 		case 'A':
 			/* TODO */
+			break;
+		case 'f':
+			/* set the base addr for kernel */
+			char *func_tmp = strdup(optarg);
+			find_func_declaration(func_tmp);
 			break;
 		case 'h':
 			usage();
