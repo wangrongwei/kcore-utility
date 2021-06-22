@@ -1,6 +1,5 @@
-
-#ifndef __KREAD_H__
-#define __KREAD_H__
+#ifndef __XALLOC_H__
+#define __XALLOC_H__
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,10 +16,8 @@ char *xstrdup(const char *str)
 	assert(str);
 	ret = strdup(str);
 	if (!ret)
-		err(XALLOC_EXIT_CODE, "cannot duplicate string");
+		error_msg("cannot duplicate string");
 	return ret;
 }
 
-
 #endif
-

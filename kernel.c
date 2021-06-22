@@ -15,8 +15,5 @@ char *KERNEL_FILE[] = {
 	"System.map",
 	"compile_commands.json",
 	NULL
-}
-
-
-
+};
 

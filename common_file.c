@@ -9,7 +9,7 @@
 int check_function(char *func_name)
 {
 	/* System.map */
-
+	return 0;
 }
 
 

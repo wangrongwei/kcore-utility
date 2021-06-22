@@ -1,16 +1,15 @@
-
 #ifndef __ERROR_H__
 #define __ERROR_H__
+
+#include <stdlib.h>
 
 #define ENORI	126
 #define ENOEXIST 127
 
-
-#ifndef HAVE_ERR_H
 static inline void
 errmsg(char doexit, int excode, char adderr, const char *fmt, ...)
 {
-	fprintf(stderr, "%s: ", program_invocation_short_name);
+	fprintf(stderr, "%s: ", "kread");
 	if (fmt != NULL) {
 		va_list argp;
 		va_start(argp, fmt);
@@ -31,5 +30,3 @@ errmsg(char doexit, int excode, char adderr, const char *fmt, ...)
 #endif
 
 #endif
-
-
