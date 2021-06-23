@@ -933,6 +933,8 @@ struct offset_table {                    /* stash of commonly-used offsets */
 	long block_device_bd_stats;
 };
 
+extern struct offset_table offset_table;
+
 struct size_table {         /* stash of commonly-used sizes */
 	long page;
 	long free_area_struct;

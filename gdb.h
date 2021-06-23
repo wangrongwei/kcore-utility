@@ -1,6 +1,8 @@
 #ifndef __GDB_H__
 #define __GDB_H__
 
+#include <stdio.h>
+
 #define GDB_5_3   (0)
 #define GDB_6_0   (1)
 #define GDB_6_1   (2)
@@ -104,7 +106,7 @@ struct gnu_request {
 /*
  *  gdb/symtab.c
  */
-extern void gdb_command_funnel(struct gnu_request *);
-
+// extern void gdb_command_funnel(struct gnu_request *);
+extern void get_gdb_version(void);
 
 #endif

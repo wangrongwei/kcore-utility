@@ -4,7 +4,7 @@
 EXEC=kread
 
 # find .c file under the current dir
-C_SOURCES = $(shell find . -path "./.sicode" -prune -o -name "*.c" -print)
+C_SOURCES = $(shell find . -path "./.si" -prune -o -name "*.c" -print)
 C_OBJECTS = $(patsubst %.c,%.o,$(C_SOURCES))
 
 # find .asm file under the current dir

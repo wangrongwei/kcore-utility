@@ -4,9 +4,13 @@
 #include <sys/utsname.h>
 #include <sys/types.h>    
 #include <sys/stat.h>
+#include <fcntl.h>
 
 #include <string.h>
 #include <common.h>
+
+#include "gdb.h"
+#include "kernel.h"
 
 #define BUFSIZE  (1500)
 #define NULLCHAR ('\0')
@@ -80,4 +84,5 @@ static inline int string_exists(char *s) { return (s ? TRUE : FALSE); }
 
 extern int file_exists(char *file, struct stat *sp);
 
+extern long request_gdb(struct gnu_request *req);
 #endif

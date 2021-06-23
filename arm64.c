@@ -1,3 +1,5 @@
+#include "kernel.h"
+#include "kcore.h"
 #include "kread.h"
 
 /*
@@ -23,6 +25,7 @@ void arm64_kernel_init(void)
 static int
 arm64_vtop_4level_4k(unsigned long pgd, unsigned long vaddr, physaddr_t *paddr, int verbose)
 {
+#if 0
 	unsigned long *pgd_base, *pgd_ptr, pgd_val;
 	unsigned long *pud_base, *pud_ptr, pud_val;
 	unsigned long *pmd_base, *pmd_ptr, pmd_val;
@@ -93,7 +96,7 @@ arm64_vtop_4level_4k(unsigned long pgd, unsigned long vaddr, physaddr_t *paddr, 
 		}
 		goto no_page;
 	}
-
+#endif
 	return TRUE;
 no_page:
 	return FALSE;
@@ -103,6 +106,7 @@ no_page:
 static int
 arm64_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int verbose)
 {
+#if 0
 	unsigned long kernel_pgd;
 
 	if (!IS_KVADDR(kvaddr))
@@ -124,6 +128,7 @@ arm64_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, in
 
 	switch (machdep->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K))
 	{
+#endif
 #if 0
 	case VM_L2_64K:
 		return arm64_vtop_2level_64k(kernel_pgd, kvaddr, paddr, verbose);
@@ -131,17 +136,19 @@ arm64_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, in
 		return arm64_vtop_3level_64k(kernel_pgd, kvaddr, paddr, verbose);
 	case VM_L3_4K:
 		return arm64_vtop_3level_4k(kernel_pgd, kvaddr, paddr, verbose);
-#endif
+
 	case VM_L4_4K:
 		return arm64_vtop_4level_4k(kernel_pgd, kvaddr, paddr, verbose);
 	default:
 		return FALSE;
 	}
+#endif
 }
 
 static int
 arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, int verbose)
 {
+#if 0
         unsigned long user_pgd;
 
         readmem(tc->mm_struct + OFFSET(mm_struct_pgd), KVADDR,
@@ -151,18 +158,19 @@ arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, in
 
 	switch (machdep->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K))
 	{
-#if 0
+
 	case VM_L2_64K:
 		return arm64_vtop_2level_64k(user_pgd, uvaddr, paddr, verbose);
 	case VM_L3_64K:
 		return arm64_vtop_3level_64k(user_pgd, uvaddr, paddr, verbose);
 	case VM_L3_4K:
 		return arm64_vtop_3level_4k(user_pgd, uvaddr, paddr, verbose);
-#endif
+
 	case VM_L4_4K:
 		return arm64_vtop_4level_4k(user_pgd, uvaddr, paddr, verbose);
 	default:
 		return FALSE;
 	}
+#endif
 }
 
