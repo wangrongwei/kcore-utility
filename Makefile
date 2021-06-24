@@ -16,7 +16,7 @@ ASM = nasm
 LD = ld
 OBJCOPY = objcopy
 
-C_FLAGS   = -c -ggdb -gstabs+ -fno-stack-protector -I include
+C_FLAGS   = -c -ggdb -fno-stack-protector -I include
 
 LD_FLAGS  = 
 
