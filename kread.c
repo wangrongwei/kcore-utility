@@ -178,8 +178,10 @@ void vmlinux_init(void)
 	FILE *fp;
 
 	fp = popen("uname -r", "r");
-	while (fgets(fp, sizeof(buf), fp) != NULL) {
+	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		current_linux_release = strdup(buf);
+		/* remove the last \n */
+		current_linux_release[strcspn(current_linux_release, "\n")] = '\0';
 	}
 	pclose(fp);
 
