@@ -12,11 +12,11 @@
  */
 int file_exists(char *file, struct stat *sp)
 {
-        struct stat sbuf;
+	struct stat sbuf;
 
-        if (stat(file, sp ? sp : &sbuf) == 0)
-                return TRUE;
+	if (stat(file, sp ? sp : &sbuf) == 0)
+		return TRUE;
 
-        return FALSE;
+	return FALSE;
 }
 

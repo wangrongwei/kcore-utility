@@ -93,7 +93,7 @@ static void create_dir(void)
 	char dir[40];
 	struct passwd *pwd = getpwuid(getuid());
 
-    	sprintf(dir, "/home/%s/%s", pwd->pw_name, ".kread");
+	sprintf(dir, "/home/%s/%s", pwd->pw_name, ".kread");
 	base_path = strdup((char *)dir);
 	if (access(base_path, R_OK) < 0) {
 		/* Not exist, create file */

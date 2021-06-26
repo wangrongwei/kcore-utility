@@ -14,29 +14,29 @@ static struct proc_kcore_data *pkd = &proc_kcore_data;
 static int kcore_fd;
 
 /*
- *  Strip line-ending whitespace.
+ * Strip line-ending whitespace.
  */
 char *strip_ending_whitespace(char *line)
 {
-        char *p;
+	char *p;
 
 	if (line == NULL || strlen(line) == 0)
-                return(line);
+		return(line);
 
-        p = &LASTCHAR(line);
+	p = &LASTCHAR(line);
 
-        while (*p == ' ' || *p == '\t') {
-                *p = NULLCHAR;
-                if (p == line)
-                        break;
-                p--;
-        }
+	while (*p == ' ' || *p == '\t') {
+		*p = NULLCHAR;
+		if (p == line)
+			break;
+		p--;
+	}
 
-        return(line);
+	return(line);
 }
 
 /*
- *  Strip line-ending linefeeds in a string.
+ * Strip line-ending linefeeds in a string.
  */
 char *strip_linefeeds(char *line)
 {
@@ -57,15 +57,15 @@ char *strip_linefeeds(char *line)
 }
 
 /*
- *  Strip line-beginning whitespace.
+ * Strip line-beginning whitespace.
  */
 char *strip_beginning_whitespace(char *line)
 {
 	char buf[BUFSIZE];
-        char *p;
+	char *p;
 
 	if (line == NULL || strlen(line) == 0)
-                return(line);
+		return(line);
 
 	strcpy(buf, line);
 	p = &buf[0];
@@ -73,7 +73,7 @@ char *strip_beginning_whitespace(char *line)
 		p++;
 	strcpy(line, p);
 
-        return(line);
+	return(line);
 }
 
 /*
@@ -87,27 +87,28 @@ char *strip_line_end(char *line)
 }
 
 /*
- *  Strip line-beginning and line-ending whitespace and linefeeds.
+ * Strip line-beginning and line-ending whitespace and linefeeds.
  */
 char *clean_line(char *line)
 {
 	strip_beginning_whitespace(line);
-        strip_linefeeds(line);
-        strip_ending_whitespace(line);
-        return(line);
+	strip_linefeeds(line);
+	strip_ending_whitespace(line);
+
+	return(line);
 }
 
 /*
- *  Parse a line into tokens, populate the passed-in argv[] array, and return
- *  the count of arguments found.  This function modifies the passed-string 
- *  by inserting a NULL character at the end of each token.  Expressions 
- *  encompassed by parentheses, and strings encompassed by apostrophes, are 
- *  collected into single tokens.
+ * Parse a line into tokens, populate the passed-in argv[] array, and return
+ * the count of arguments found.  This function modifies the passed-string 
+ * by inserting a NULL character at the end of each token.  Expressions 
+ * encompassed by parentheses, and strings encompassed by apostrophes, are 
+ * collected into single tokens.
  */
 int parse_line(char *str, char *argv[])
 {
 	int i, j, k;
-    	int string;
+	int string;
 	int expression;
 
 	for (i = 0; i < MAXARGS; i++)
@@ -115,11 +116,11 @@ int parse_line(char *str, char *argv[])
 
 	clean_line(str);
 
-        if (str == NULL || strlen(str) == 0)
-                return(0);
+	if (str == NULL || strlen(str) == 0)
+		return(0);
 
-        i = j = k = 0;
-        string = FALSE;
+	i = j = k = 0;
+	string = FALSE;
 	expression = 0;
 
 	/*
@@ -149,34 +150,34 @@ next:
 	else
 		argv[j++] = str;
 
-    	while (TRUE) {
+	while (TRUE) {
 		if (j == MAXARGS)
 			error_msg("too many arguments in string!\n");
 
-        	while (str[i] != ' ' && str[i] != '\t' && str[i] != NULLCHAR) {
-            		i++;
-        	}
+		while (str[i] != ' ' && str[i] != '\t' && str[i] != NULLCHAR) {
+			i++;
+		}
 
-	        switch (str[i]) {
-	        case ' ':
-	        case '\t':
-	            str[i++] = NULLCHAR;
+		switch (str[i]) {
+		case ' ':
+		case '\t':
+			str[i++] = NULLCHAR;
 
-	            while (str[i] == ' ' || str[i] == '\t') {
-	                i++;
-	            }
+			while (str[i] == ' ' || str[i] == '\t') {
+				i++;
+			}
 	
-	            if (str[i] == '"') {    
-	                str[i] = ' ';
-	                string = TRUE;
-	                i++;
-	            }
+			if (str[i] == '"') {
+				str[i] = ' ';
+				string = TRUE;
+				i++;
+			}
 
-		    /*
-		     *  Make an expression encompassed by a set of parentheses 
-		     *  a single argument.  Also account for embedded sets.
-		     */
-		    if (!string && str[i] == '(') {     
+			/*
+			 *  Make an expression encompassed by a set of parentheses 
+			 *  a single argument.  Also account for embedded sets.
+			 */
+			if (!string && str[i] == '(') {     
 			argv[j++] = &str[i];
 			expression = 1;
 			while (expression > 0) {
@@ -201,33 +202,33 @@ next:
 				i++;
 				continue;
 			}
-		    }
+		}
 
-	            if (str[i] != NULLCHAR && str[i] != '\n') {
-	                argv[j++] = &str[i];
-	                if (string) {
-	                        string = FALSE;
-	                        while (str[i] != '"' && str[i] != NULLCHAR)
-	                                i++;
-	                        if (str[i] == '"')
-	                                str[i] = ' ';
-	                }
-	                break;
-	            }
-	                        /* else fall through */
-	        case '\n':
-	            str[i] = NULLCHAR;
-	                        /* keep falling... */
-	        case NULLCHAR:
-	            argv[j] = NULLCHAR;
-	            return(j);
-	        }
-    	}  
+		if (str[i] != NULLCHAR && str[i] != '\n') {
+			argv[j++] = &str[i];
+			if (string) {
+				string = FALSE;
+				while (str[i] != '"' && str[i] != NULLCHAR)
+				i++;
+				if (str[i] == '"')
+					str[i] = ' ';
+			}
+			break;
+		}
+		/* else fall through */
+		case '\n':
+			str[i] = NULLCHAR;
+			/* keep falling... */
+		case NULLCHAR:
+			argv[j] = NULLCHAR;
+			return(j);
+		}
+	}  
 }
 
 /*
- *  Determine whether a string contains only hexadecimal characters.
- *  If count is non-zero, limit the search to count characters.
+ * Determine whether a string contains only hexadecimal characters.
+ * If count is non-zero, limit the search to count characters.
  */
 int hexadecimal(char *s, int count)
 {
@@ -241,49 +242,48 @@ int hexadecimal(char *s, int count)
 		cnt = count;
 
 	for (p = &s[0], digits = 0; *p; p++) {
-        	switch(*p) 
-		{
-	        case 'a':
-	        case 'b':
-	        case 'c':
-	        case 'd':
-	        case 'e':
-	        case 'f':
-	        case 'A':
-	        case 'B':
-	        case 'C':
-	        case 'D':
-	        case 'E':
-	        case 'F':
-	        case '1':
-	        case '2':
-	        case '3':
-	        case '4':
-	        case '5':
-	        case '6':
-	        case '7':
-	        case '8':
-	        case '9':
-	        case '0':
+		switch(*p) {
+		case 'a':
+		case 'b':
+		case 'c':
+		case 'd':
+		case 'e':
+		case 'f':
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'D':
+		case 'E':
+		case 'F':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case '0':
 			digits++;
-	        case 'x':
-	        case 'X':
-	                break;
+		case 'x':
+		case 'X':
+			break;
 
-	        case ' ':
-	                if (*(p+1) == NULLCHAR)
-	                    break;
-	                else
-	                    return FALSE;
+		case ' ':
+			if (*(p+1) == NULLCHAR)
+			break;
+		else
+			return FALSE;
 		default:
 			return FALSE;
-        	}
+		}
 
 		if (count && (--cnt == 0))
 			break;
-    	}
+	}
 
-    	return (digits ? TRUE : FALSE);
+	return (digits ? TRUE : FALSE);
 }
 
 /*
@@ -291,69 +291,68 @@ int hexadecimal(char *s, int count)
  */
 unsigned long htol(char *s, int flags, int *errptr)
 {
-    	long i, j; 
+	long i, j; 
 	unsigned long n;
 
-    	if (s == NULL) { 
+	if (s == NULL) { 
 		if (!(flags & QUIET))
 			error_msg("received NULL string\n");
 		goto htol_error;
 	}
 
-    	if (STRNEQ(s, "0x") || STRNEQ(s, "0X"))
+	if (STRNEQ(s, "0x") || STRNEQ(s, "0X"))
 		s += 2;
 
-    	if (strlen(s) > MAX_HEXADDR_STRLEN) { 
+	if (strlen(s) > MAX_HEXADDR_STRLEN) { 
 		if (!(flags & QUIET))
 			error_msg("input string too large: \"%s\" (%d vs %d)\n", 
 				s, strlen(s), MAX_HEXADDR_STRLEN);
 		goto htol_error;
 	}
 
-    	for (n = i = 0; s[i] != 0; i++) {
-	        switch (s[i]) 
-	        {
-	            case 'a':
-	            case 'b':
-	            case 'c':
-	            case 'd':
-	            case 'e':
-	            case 'f':
-	                j = (s[i] - 'a') + 10;
-	                break;
-	            case 'A':
-	            case 'B':
-	            case 'C':
-	            case 'D':
-	            case 'E':
-	            case 'F':
-	                j = (s[i] - 'A') + 10;
-	                break;
-	            case '1':
-	            case '2':
-	            case '3':
-	            case '4':
-	            case '5':
-	            case '6':
-	            case '7':
-	            case '8':
-	            case '9':
-	            case '0':
-	                j = s[i] - '0';
-	                break;
-		    case 'x':
-		    case 'X':
-		    case 'h':
+	for (n = i = 0; s[i] != 0; i++) {
+		switch (s[i]) {
+		case 'a':
+		case 'b':
+		case 'c':
+		case 'd':
+		case 'e':
+		case 'f':
+			j = (s[i] - 'a') + 10;
+			break;
+		case 'A':
+		case 'B':
+		case 'C':
+		case 'D':
+		case 'E':
+		case 'F':
+			j = (s[i] - 'A') + 10;
+			break;
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case '0':
+			j = s[i] - '0';
+			break;
+		case 'x':
+		case 'X':
+		case 'h':
 			continue;
-	            default:
+		default:
 			if (!(flags & QUIET))
 				error_msg("invalid input: \"%s\"\n", s);
 			goto htol_error;
-	        }
-	        n = (16 * n) + j;
-    	}
+		}
+		n = (16 * n) + j;
+	}
 
-    	return(n);
+	return(n);
 
 htol_error:
 	return BADADDR;
@@ -364,9 +363,9 @@ htol_error:
  */
 unsigned long lookup_symbol_from_proc_kallsyms(char *symname)
 {
-        FILE *kp;
+	FILE *kp;
 	char buf[BUFSIZE];
-        char *kallsyms[MAXARGS];
+	char *kallsyms[MAXARGS];
 	unsigned long kallsym;
 	int found;
 
@@ -385,8 +384,8 @@ unsigned long lookup_symbol_from_proc_kallsyms(char *symname)
 	found = FALSE;
 	while (!found && fgets(buf, BUFSIZE, kp) &&
 	    (parse_line(buf, kallsyms) == 3)) {
-		if (hexadecimal(kallsyms[0], 0) && 
-		    STREQ(kallsyms[2], symname)) {
+		if (hexadecimal(kallsyms[0], 0) &&
+			STREQ(kallsyms[2], symname)) {
 			kallsym = htol(kallsyms[0], RETURN_ON_ERROR, NULL);
 			found = TRUE;
 			break;
@@ -409,20 +408,20 @@ void arch_kernel_init(void)
 struct task_context *
 pid_to_context(unsigned long pid)
 {
-        int i;
-        struct task_context *tc, *firsttc, *lasttc;
+	int i;
+	struct task_context *tc, *firsttc, *lasttc;
 #if 0
-        tc = FIRST_CONTEXT();
-        firsttc = lasttc = NULL;
+	tc = FIRST_CONTEXT();
+	firsttc = lasttc = NULL;
 
-        for (i = 0; i < RUNNING_TASKS(); i++, tc++) {
-                if (tc->pid == pid) {
+	for (i = 0; i < RUNNING_TASKS(); i++, tc++) {
+		if (tc->pid == pid) {
 			if (!firsttc)
-                        	firsttc = tc;
-                        if (lasttc)
-                                lasttc->tc_next = tc;
-                        tc->tc_next = NULL;
-                        lasttc = tc;
+				firsttc = tc;
+			if (lasttc)
+				lasttc->tc_next = tc;
+			tc->tc_next = NULL;
+			lasttc = tc;
 		}
 	}
 #endif
@@ -541,19 +540,19 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 	if (paddr == KCORE_USE_VADDR)
 		kvaddr = addr;
 	else
-		kvaddr =  PTOV((unsigned long)paddr);
+		kvaddr = PTOV((unsigned long)paddr);
 
 	offset = UNINITIALIZED;
 	readcnt = cnt;
 
 	/*
-	 *  If KASLR, the PAGE_OFFSET may be unknown early on, so try
-	 *  the (hopefully) mapped kernel address first.
+	 * If KASLR, the PAGE_OFFSET may be unknown early on, so try
+	 * the (hopefully) mapped kernel address first.
 	 */
 	for (i = 0; i < pkd->segments; i++) {
 		lp64 = pkd->load64 + i;
 		if ((addr >= lp64->p_vaddr) &&
-		    (addr < (lp64->p_vaddr + lp64->p_memsz))) {
+			(addr < (lp64->p_vaddr + lp64->p_memsz))) {
 			offset = (off_t)(addr - lp64->p_vaddr) + 
 				(off_t)lp64->p_offset;
 			break;
@@ -565,7 +564,7 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 	for (i = 0; i < pkd->segments; i++) {
 		lp64 = pkd->load64 + i;
 		if ((kvaddr >= lp64->p_vaddr) &&
-		    (kvaddr < (lp64->p_vaddr + lp64->p_memsz))) {
+			(kvaddr < (lp64->p_vaddr + lp64->p_memsz))) {
 			offset = (off_t)(kvaddr - lp64->p_vaddr) + 
 				(off_t)lp64->p_offset;
 			break;
@@ -575,7 +574,7 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 	if (offset == UNINITIALIZED)
 		return SEEK_ERROR;
 
-        if (lseek(fd, offset, SEEK_SET) != offset)
+	if (lseek(fd, offset, SEEK_SET) != offset)
 		perror("lseek");
 
 	if (read(fd, bufptr, readcnt) != readcnt)
@@ -654,13 +653,13 @@ long request_gdb(struct gnu_request *req)
 	char buf1[100];
 	char buf2[100];
 	int cmd = req->command;
-        int des_p[2], pid;
+	int des_p[2], pid;
 	int nbytes;
 
-        if(pipe(des_p) == -1) {
+	if(pipe(des_p) == -1) {
 		perror("Pipe failed");
 		exit(1);
-        }
+	}
 
 	/* lookup_symbol_in_language */
 	// sprintf(buf, "printf \"%%ld\", (u64)(&((struct %s*)0)->%s + 1) - (u64)&((struct %s*)0)->%s",
@@ -679,18 +678,18 @@ long request_gdb(struct gnu_request *req)
 		printf("something error!");
 	break;
 	}
-	char *argv[] = {"-batch", "-ex", buf1, "-ex", buf2, NULL};
-    	char *envp[] = {0, NULL};
+	char *argv[] = {"gdb", "-batch", "-ex", buf1, "-ex", buf2, NULL};
+	char *envp[] = {0, NULL};
 
 	pid = fork();
-        if(pid == 0) {
+	if(pid == 0) {
 		close(STDOUT_FILENO); //closing stdout
 		dup2(des_p[1], STDOUT_FILENO); //replacing stdout with pipe write 
 		close(des_p[0]); //closing pipe read
 
- 		execve("/usr/bin/gdb", argv, envp);
+		execve("/usr/bin/gdb", argv, envp);
 		exit(0);
-        } else {
+	} else {
 		/* parent */
 		int status;
 		waitpid(pid, &status, 0);

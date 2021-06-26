@@ -63,11 +63,11 @@ extern struct size_table size_table;
 #define STRUCT_SIZE_INIT(X, Y) (ASSIGN_SIZE(X) = STRUCT_SIZE(Y))
 #define MEMBER_OFFSET(X,Y)  datatype_info((X), (Y), NULL)
 
-struct task_context {                     /* context stored for each task */
-        unsigned long task;
+struct task_context {       /* context stored for each task */
+	unsigned long task;
 	unsigned long thread_info;
-        unsigned long pid;
-        char comm[TASK_COMM_LEN+1];
+	unsigned long pid;
+	char comm[TASK_COMM_LEN+1];
 	int processor;
 	unsigned long ptask;
 	unsigned long mm_struct;
@@ -80,7 +80,7 @@ static inline int string_exists(char *s) { return (s ? TRUE : FALSE); }
 #define STREQ(A, B)      (string_exists((char *)A) && string_exists((char *)B) && \
 	(strcmp((char *)(A), (char *)(B)) == 0))
 #define STRNEQ(A, B)     (string_exists((char *)A) && string_exists((char *)B) && \
-        (strncmp((char *)(A), (char *)(B), strlen((char *)(B))) == 0))
+	(strncmp((char *)(A), (char *)(B), strlen((char *)(B))) == 0))
 
 extern int file_exists(char *file, struct stat *sp);
 
