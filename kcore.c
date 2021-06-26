@@ -699,6 +699,55 @@ long request_gdb(struct gnu_request *req)
 	return 8;
 }
 
+/*
+ * example:
+ * 	pahole vmlinux -C task_struct
+ */
+long request_pahole(struct gnu_request *req)
+{
+	char buf[100];
+	int cmd = req->command;
+	int des_p[2], pid;
+	int nbytes;
+
+	if(pipe(des_p) == -1) {
+		perror("Pipe failed");
+		exit(1);
+	}
+
+	switch (cmd) {
+	case GNU_PASS_THROUGH:
+		sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
+		current_vmlinux_path, req->name);
+	break;
+	case GNU_GET_DATATYPE:
+		sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
+		current_vmlinux_path, req->name);
+	break;
+	default:
+		printf("something error!");
+	break;
+	}
+
+	pid = fork();
+	if(pid == 0) {
+		close(STDOUT_FILENO);
+		/* replacing stdout with pipe write */
+		dup2(des_p[1], STDOUT_FILENO);
+		close(des_p[0]);
+
+		system(buf);
+		exit(0);
+	} else {
+		/* parent */
+		int status;
+		close(des_p[1]);
+		waitpid(pid, &status, 0);
+		nbytes = read(des_p[0], buf, sizeof(buf));
+		printf("struct size buf: %s\n", buf);
+	}
+	return 8;
+}
 
 /*
  * #define STRUCT_SIZE(X)      datatype_info((X), NULL, NULL)
@@ -726,5 +775,5 @@ long datatype_info(char *name, char *member, struct datatype_member *dm)
 
 	// gdb_command_funnel(req);
 	/* request data form gdb */
-	return request_gdb(req);
+	return request_pahole(req);
 }

@@ -85,4 +85,5 @@ static inline int string_exists(char *s) { return (s ? TRUE : FALSE); }
 extern int file_exists(char *file, struct stat *sp);
 
 extern long request_gdb(struct gnu_request *req);
+extern long request_pahole(struct gnu_request *req);
 #endif
