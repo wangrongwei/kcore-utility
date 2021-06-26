@@ -718,11 +718,11 @@ long request_pahole(struct gnu_request *req)
 	switch (cmd) {
 	case GNU_PASS_THROUGH:
 		sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
-		current_vmlinux_path, req->name);
+			current_vmlinux_path, req->name);
 	break;
 	case GNU_GET_DATATYPE:
 		sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
-		current_vmlinux_path, req->name);
+			current_vmlinux_path, req->name);
 	break;
 	default:
 		printf("something error!");
