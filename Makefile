@@ -27,13 +27,16 @@ LD_FLAGS  =
 $(EXEC) : $(C_OBJECTS)
 	$(CC) $(LD_FLAGS) $(S_OBJECTS) $(C_OBJECTS) -o $(EXEC)
 
-.PHONY: all clean install
+.PHONY: all clean install uninstall
 
 all:
 	@echo "build $(EXEC)"
 
 install:
-	install $(EXEC)
+	install $(EXEC) /usr/local/bin/
+
+uninstall:
+	rm -rf /usr/local/bin/$(EXEC)
 
 clean :
 	rm -f $(EXEC) $(C_OBJECTS)
