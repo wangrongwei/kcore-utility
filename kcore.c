@@ -707,18 +707,22 @@ long request_pahole(struct gnu_request *req)
 {
 	char buf[100];
 	int cmd = req->command;
-	int des_p[2], pid;
 	int nbytes;
-
-	if(pipe(des_p) == -1) {
-		perror("Pipe failed");
-		exit(1);
-	}
+	int ret;
 
 	switch (cmd) {
 	case GNU_PASS_THROUGH:
-		sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
-			current_vmlinux_path, req->name);
+		if (req->member == NULL)
+			sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
+				current_vmlinux_path, req->name);
+		else {
+			/* request member offset */
+			long size = request_pahole_member_number(req->name);
+			sprintf(buf, "pahole -JV %s | grep -A %d -m 1 %s|awk \'if($1==\"%s\"){print $3}\'",
+				current_vmlinux_path, size, req->name, req->member);
+			ret = exec_cmd_return_long(buf) / 8;
+			goto success;
+		}
 	break;
 	case GNU_GET_DATATYPE:
 		sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
@@ -729,24 +733,9 @@ long request_pahole(struct gnu_request *req)
 	break;
 	}
 
-	pid = fork();
-	if(pid == 0) {
-		close(STDOUT_FILENO);
-		/* replacing stdout with pipe write */
-		dup2(des_p[1], STDOUT_FILENO);
-		close(des_p[0]);
-
-		system(buf);
-		exit(0);
-	} else {
-		/* parent */
-		int status;
-		close(des_p[1]);
-		waitpid(pid, &status, 0);
-		nbytes = read(des_p[0], buf, sizeof(buf));
-		printf("struct size buf: %s\n", buf);
-	}
-	return 8;
+	ret = exec_cmd_return_long(buf);
+success:
+	return ret;
 }
 
 /*

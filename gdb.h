@@ -48,9 +48,9 @@
 #define GNU_VAR_LENGTH_TYPECODE (0x80)
 
 /*
- *  Common request structure for BFD or GDB data or commands.
+ * Common request structure for BFD or GDB data or commands.
  */
-struct gnu_request {    
+struct gnu_request {
 	int command;
 	char *buf;
 	FILE *fp;
