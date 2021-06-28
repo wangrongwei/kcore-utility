@@ -17,9 +17,9 @@ void arm64_kernel_init(void)
 
 	STRUCT_SIZE_INIT(xarray, "xarray");
 	STRUCT_SIZE_INIT(xa_node, "xa_node");
-	MEMBER_OFFSET_INIT(xarray_xa_head, "xarray","xa_head");
-	MEMBER_OFFSET_INIT(xa_node_slots, "xa_node","slots");
-	MEMBER_OFFSET_INIT(xa_node_shift, "xa_node","shift");
+	MEMBER_OFFSET_INIT(xarray_xa_head, "xarray", "xa_head");
+	MEMBER_OFFSET_INIT(xa_node_slots, "xa_node", "slots");
+	MEMBER_OFFSET_INIT(xa_node_shift, "xa_node", "shift");
 }
 
 static int

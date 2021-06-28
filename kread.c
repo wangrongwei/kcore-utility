@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 	vmlinux_init();
 	arch_kernel_init();
 	/* TODO */
-	// symbols_init_from_kallsyms();
+	symbols_init_from_kallsyms();
 
 	terminate();
 }
