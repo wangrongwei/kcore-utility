@@ -1,8 +1,0 @@
----- current_vmlinux_path Matches (7 in 3 files) ----
-request_gdb in kcore.c line 671 : 		sprintf(buf1, "file %s", current_vmlinux_path);
-request_gdb in kcore.c line 675 : 		sprintf(buf1, "file %s", current_vmlinux_path);
-kcore.h line 45 : extern char *current_vmlinux_path;
-vmlinux_init in kread.c line 185 : 	current_vmlinux_path = strdup(buf);
-vmlinux_init in kread.c line 186 : 	if((access(current_vmlinux_path, F_OK)) != -1) {
-vmlinux_init in kread.c line 187 : 		printf("%s exists\n", current_vmlinux_path);
-vmlinux_init in kread.c line 190 : 		printf("%s NOT exists\n", current_vmlinux_path);
