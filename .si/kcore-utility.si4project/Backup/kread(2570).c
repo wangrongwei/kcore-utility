@@ -44,7 +44,7 @@ static const struct option longopts[] = {
 	{ "summary-only",	no_argument,	   0, 'c' },
 	{ "summary",		no_argument,	   0, 'C' },
 	{ "debug",		no_argument,	   0, 'd' },
-	{ "file",		required_argument, 0, 'f' },
+	{ "func",		required_argument, 0, 'f' }, /* find func */
 	{ "help",		no_argument,	   0, 'h' },
 	{ "instruction-pointer", no_argument,      0, 'i' },
 	{ "kcore-info",		no_argument,	   0, 'k' },
@@ -67,28 +67,20 @@ static const struct option longopts[] = {
 	{ 0, 0, 0, 0 }
 };
 
-const char *program;
 /* the base address of kernel source */
 char *base_path;
-char *current_linux_release = NULL;
-char *current_vmlinux_path = NULL;
+char *current_linux_release;
+char *current_vmlinux_path;
 
 static void usage(void)
 {
-	fprintf(stderr,
-		"Usage: %s [options] --help\n"
-		"  --help         -h  Print this help\n"
-		"  --version      -V  Print current version\n"
-		"  --file         -f  vmlinux file\n"
-		"  --pid          -p  print task info\n"
-		"\n"
-		"  example:\n"
-		"  print information of the specify task:\n"
-		"\n"
-		"		$kread -p 22366\n"
-		"		TODO\n"
-		"\n",
-		program);
+	FILE *out = stdout;
+
+	fprintf(out, "kread --help\n");
+	fputs(("	-a, --all		print\n"), out);
+	fputs(("	-f, --func		find func\n"), out);
+	fputs(("	-m, --macro		analy the value for specify MACRO\n"), out);
+	fputs(("	-p, --PID		print task info\n"), out);
 
 	exit(EXIT_SUCCESS);
 }
@@ -101,7 +93,7 @@ static void create_dir(void)
 	char dir[40];
 	struct passwd *pwd = getpwuid(getuid());
 
-	sprintf(dir, "/home/%s/%s", pwd->pw_name, ".kread");
+    	sprintf(dir, "/home/%s/%s", pwd->pw_name, ".kread");
 	base_path = strdup((char *)dir);
 	if (access(base_path, R_OK) < 0) {
 		/* Not exist, create file */
@@ -147,7 +139,7 @@ static void init(int argc, char *argv[])
 			/* TODO */
 			break;
 		case 'f':
-			current_vmlinux_path = strdup(optarg);
+			/* TODO */
 			break;
 		case 'h':
 			usage();
@@ -194,13 +186,7 @@ void vmlinux_init(void)
 	pclose(fp);
 
 	sprintf(buf, "/lib/modules/%s/build/vmlinux", current_linux_release);
-
-	/*
-	 * if current_vmlinux_path != NULL, indicate the vmlinux path has
-	 * been set in '-f'
-	 */
-	if (!current_vmlinux_path)
-		current_vmlinux_path = strdup(buf);
+	current_vmlinux_path = strdup(buf);
 	if((access(current_vmlinux_path, F_OK)) != -1) {
 		printf("%s exists\n", current_vmlinux_path);
 	}
@@ -223,13 +209,12 @@ int main(int argc, char *argv[])
 	/* locialize */
 	setlocale(LC_ALL, "");
 	create_dir();
-	program = argv[0];
 	init(argc, argv);
 	kcore_init();
 	vmlinux_init();
 	arch_kernel_init();
 	/* TODO */
-	symbols_init_from_kallsyms();
+	// symbols_init_from_kallsyms();
 
 	terminate();
 }
