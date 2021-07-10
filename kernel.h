@@ -1,6 +1,66 @@
 #ifndef __KERNEL_H__
 #define __KERNEL_H__
 
+#include "common.h"
+
+#define VA_BITS 48
+#define VA_BITS_ACTUAL 48
+
+/* 
+ * sources: Documentation/arm64/memory.txt 
+ *          arch/arm64/include/asm/memory.h 
+ *          arch/arm64/include/asm/pgtable.h
+ */
+#define ARM64_VA_START       ((0xffffffffffffffffUL) \
+	<< VA_BITS)
+#define _VA_START(va)        ((0xffffffffffffffffUL) - \
+	((1UL) << ((va) - 1)) + 1)
+#define TEXT_OFFSET_MASK     (~((MEGABYTES(2UL))-1))
+#define ARM64_PAGE_OFFSET    ((0xffffffffffffffffUL) \
+	<< (VA_BITS - 1))
+#define ARM64_PAGE_OFFSET_ACTUAL ((0xffffffffffffffffUL) \
+	- ((1UL) << VA_BITS_ACTUAL) + 1)
+
+#define ARM64_USERSPACE_TOP  ((1UL) << VA_BITS)
+#define ARM64_USERSPACE_TOP_ACTUAL  ((1UL) << VA_BITS_ACTUAL)
+#define VA_START _VA_START(VA_BITS_ACTUAL)
+
+#define ARM64_VMALLOC_END    (ARM64_PAGE_OFFSET - 0x400000000UL - KILOBYTES(64) - 1)
+#define ARM64_VMEMMAP_VADDR  ((ARM64_VMALLOC_END+1) + KILOBYTES(64))
+#define ARM64_VMEMMAP_END    (ARM64_VMEMMAP_VADDR + GIGABYTES(8UL) - 1)
+
+/* only used for v4.6 or later */
+#define ARM64_MODULES_VSIZE     MEGABYTES(128)
+#define ARM64_KASAN_SHADOW_SIZE (1UL << (VA_BITS - 3))
+
+#define TASK_COMM_LEN 16     /* task command name length including NULL */
+struct task_context {       /* context stored for each task */
+	unsigned long task;
+	unsigned long thread_info;
+	unsigned long pid;
+	char comm[TASK_COMM_LEN+1];
+	int processor;
+	unsigned long ptask;
+	unsigned long mm_struct;
+	struct task_context *tc_next;
+};
+
+extern int generic_is_kvaddr(unsigned long addr);
+extern int generic_is_uvaddr(unsigned long addr, struct task_context *tc);
+
+#ifdef X86_64
+extern int x86_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int verbose);
+#elif ARM64
+extern int arm64_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int verbose);
+#endif
+
+#define IS_KVADDR(X)       (generic_is_kvaddr(X))
+#define IS_UVADDR(X,C)     (generic_is_uvaddr(X,C))
+#define IS_VMALLOC_ADDR(X)    arm64_is_vmalloc_addr((unsigned long)(X))
+
+/* kernel pgtable */
+extern unsigned long kernel_pgd[];
+
 struct offset_table {       /* stash of commonly-used offsets */
 	long list_head_next; /* add new entries to end of table */
 	long list_head_prev;
@@ -50,6 +110,9 @@ struct offset_table {       /* stash of commonly-used offsets */
 	long task_struct_thread_info;
 	long task_struct_nsproxy;
 	long task_struct_rlim;
+
+	long task_struct_tasks; /* list_head */
+
 	long thread_info_task;
 	long thread_info_cpu;
 	long thread_info_previous_esp;
@@ -1096,6 +1159,78 @@ struct size_table {         /* stash of commonly-used sizes */
 	long printk_ringbuffer;
 	long prb_desc;
 };
+
+#define MAX_MACHDEP_ARGS 5  /* for --machdep/-m machine-specific args */
+
+struct mach_table {
+	unsigned long flags;
+	unsigned long kvbase;
+	unsigned long identity_map_base;
+	unsigned int pagesize;
+	unsigned int pageshift;
+	unsigned long long pagemask;
+	unsigned long pageoffset;
+	unsigned long stacksize;
+	unsigned int hz;
+	unsigned long mhz;
+	int bits;
+	int nr_irqs;
+	uint64_t memsize;
+	// int (*eframe_search)(struct bt_info *);
+	// void (*back_trace)(struct bt_info *);
+	unsigned long (*processor_speed)(void);
+	unsigned long (*get_task_pgd)(unsigned long);
+	void (*dump_irq)(int);
+	// void (*get_stack_frame)(struct bt_info *, unsigned long *, unsigned long *);
+	unsigned long (*get_stackbase)(unsigned long);
+	unsigned long (*get_stacktop)(unsigned long);
+	int (*translate_pte)(unsigned long, void *, unsigned long long);
+	uint64_t (*memory_size)(void);
+	unsigned long (*vmalloc_start)(void);
+	int (*is_task_addr)(unsigned long);
+	int (*verify_symbol)(const char *, unsigned long, char);
+	int (*dis_filter)(unsigned long, char *, unsigned int);
+	int (*get_smp_cpus)(void);
+	int (*is_kvaddr)(unsigned long);
+	int (*is_uvaddr)(unsigned long, struct task_context *);
+	int (*verify_paddr)(uint64_t);
+	void (*cmd_mach)(void);
+	void (*init_kernel_pgd)(void);
+	// struct syment *(*value_to_symbol)(unsigned long, unsigned long *);
+	struct line_number_hook {
+		char *func;
+		char **file;
+	} *line_number_hooks;
+	unsigned long last_pgd_read;
+	unsigned long last_pud_read;
+	unsigned long last_pmd_read;
+	unsigned long last_ptbl_read;
+	char *pgd;
+	char *pud;
+	char *pmd;	
+	char *ptbl;
+	int ptrs_per_pgd;
+	char *cmdline_args[MAX_MACHDEP_ARGS];
+	struct arch_machine_descriptor *mdesp;
+	unsigned long section_size_bits;
+	unsigned long max_physmem_bits;
+	unsigned long sections_per_root;
+	// int (*xendump_p2m_create)(struct xendump_data *);
+	//unsigned long (*xendump_panic_task)(struct xendump_data *);
+	//void (*get_xendump_regs)(struct xendump_data *, struct bt_info *, unsigned long *, unsigned long *);
+	void (*clear_machdep_cache)(void);
+	// int (*xen_kdump_p2m_create)(struct xen_kdump_data *);
+	int (*in_alternate_stack)(int, unsigned long);
+	void (*dumpfile_init)(int, void *);
+	void (*process_elf_notes)(void *, unsigned long);
+	// int (*get_kvaddr_ranges)(struct vaddr_range *);
+	int (*verify_line_number)(unsigned long, unsigned long, unsigned long);
+	void (*get_irq_affinity)(int);
+	void (*show_interrupts)(int, unsigned long *);
+	int (*is_page_ptr)(unsigned long, physaddr_t *);
+};
+extern struct mach_table kcoreinfo_data;
+extern struct mach_table *kcoreinfo;
 
 struct datatype_member {        /* minimal definition of a structure/union */
 	char *name;             /* and possibly a member within it */

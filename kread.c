@@ -18,6 +18,10 @@
 #include "kread.h"
 #include "kcore.h"
 
+int pgtable_enabled = 0; /* dump pgtable for PID */
+int ptedump_enabled = 0;
+int vmadump_enabled = 0; /* dump detailed vma */
+
 static const char optstring[] =
 	"+a:Ab:cCdDe:E:fFhiI:k:o:O:p:P:qrs:S:tTu:vVwxX:yzZ";
 
@@ -46,11 +50,11 @@ static const struct option longopts[] = {
 	{ "debug",		no_argument,	   0, 'd' },
 	{ "file",		required_argument, 0, 'f' },
 	{ "help",		no_argument,	   0, 'h' },
-	{ "instruction-pointer", no_argument,      0, 'i' },
+	{ "inst-pointer",	no_argument,       0, 'i' },
 	{ "kcore-info",		no_argument,	   0, 'k' },
 	{ "output",		required_argument, 0, 'o' },
 	{ "pid",		required_argument, 0, 'p' },
-	{ "trace-path",		required_argument, 0, 'P' },
+	{ "pgtable",		required_argument, 0, 'P' }, /* TODO */
 	{ "macro",		required_argument, 0, 'm' }, /* analy the value of specify macro */
 	{ "summary-sort-by",	required_argument, 0, 'S' },
 	{ "user",		required_argument, 0, 'u' },
@@ -81,11 +85,12 @@ static void usage(void)
 		"  --version      -V  Print current version\n"
 		"  --file         -f  vmlinux file\n"
 		"  --pid          -p  print task info\n"
+		"  --pgtable      -P  dump pgtable of PID\n"
 		"\n"
 		"  example:\n"
 		"  print information of the specify task:\n"
 		"\n"
-		"		$kread -p 22366\n"
+		"		$kread --pgtable[-p] 22366\n"
 		"		TODO\n"
 		"\n",
 		program);
@@ -132,11 +137,12 @@ label_error:
 	exit(ENOEXIST);
 }
 
+pid_t target_pid = -1;
+unsigned long target_addr;
 static void init(int argc, char *argv[])
 {
 	int c;
 	char *func_tmp;
-	pid_t pid;
 
 	while ((c = getopt_long(argc, argv, optstring, longopts, NULL)) != EOF) {
 		switch (c) {
@@ -153,8 +159,15 @@ static void init(int argc, char *argv[])
 			usage();
 			break;
 		case 'p':
+			ptedump_enabled = 1;
 			/* FIXME: pid1,pid2,pid3 */
-			pid = (pid_t)strtoul(optarg, NULL, 0);
+			target_pid = (pid_t)strtoul(optarg, NULL, 0);
+			target_addr = htol(argv[optind], RETURN_ON_ERROR, NULL);
+			break;
+		case 'P':
+			/* TODO */
+			pgtable_enabled = 1;
+			target_pid = (pid_t)strtoul(optarg, NULL, 0);
 			break;
 		case 'R':
 			/* set the base addr for kernel */
@@ -174,7 +187,6 @@ static void init(int argc, char *argv[])
 	}
 
 }
-
 
 /*
  * Generally, we need default vmlinux to parse kernel variables
@@ -231,5 +243,13 @@ int main(int argc, char *argv[])
 	/* TODO */
 	symbols_init_from_kallsyms();
 
+	if (target_pid != -1) {
+		dump_task(target_pid);
+		if (pgtable_enabled)
+			stat_pgtable(target_pid);
+		if (ptedump_enabled) {
+			dump_pte(target_pid, target_addr);
+		}
+	}
 	terminate();
 }

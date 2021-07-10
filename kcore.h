@@ -38,8 +38,6 @@
 
 #define MAX_HEXADDR_STRLEN (16)
 
-#define TASK_COMM_LEN 16     /* task command name length including NULL */
-
 /* vmlinux */
 extern char *current_linux_release;
 extern char *current_vmlinux_path;
@@ -50,6 +48,9 @@ extern unsigned long pid_xarray;
 extern struct offset_table offset_table;
 extern struct size_table size_table;
 
+#define MEMBER_SIZE_REQUEST ((struct datatype_member *)(-1))
+#define ANON_MEMBER_OFFSET_REQUEST ((struct datatype_member *)(-2))
+#define MEMBER_TYPE_REQUEST ((struct datatype_member *)(-3))
 #define STRUCT_SIZE_REQUEST ((struct datatype_member *)(-4))
 
 #define OFFSET(X) (offset_table.X)
@@ -62,19 +63,62 @@ extern struct size_table size_table;
 #define MEMBER_OFFSET_INIT(X, Y, Z) (ASSIGN_OFFSET(X) = MEMBER_OFFSET(Y, Z))
 #define STRUCT_SIZE_INIT(X, Y) (ASSIGN_SIZE(X) = STRUCT_SIZE(Y))
 #define MEMBER_OFFSET(X,Y)  datatype_info((X), (Y), NULL)
+#define MEMBER_SIZE(X,Y)    datatype_info((X), (Y), MEMBER_SIZE_REQUEST)
+#define MEMBER_TYPE(X,Y)    datatype_info((X), (Y), MEMBER_TYPE_REQUEST)
 
-struct task_context {       /* context stored for each task */
-	unsigned long task;
-	unsigned long thread_info;
-	unsigned long pid;
-	char comm[TASK_COMM_LEN+1];
-	int processor;
-	unsigned long ptask;
-	unsigned long mm_struct;
-	struct task_context *tc_next;
+#define VALID_SIZE(X)      (size_table.X >= 0)
+#define VALID_STRUCT(X)    (size_table.X >= 0)
+#define VALID_MEMBER(X)    (offset_table.X >= 0)
+
+/* FIXME */
+#define IS_TASK_ADDR(X)    (1)
+
+struct task_table {                      /* kernel/local task table data */
+	struct task_context *current;
+	struct task_context *context_array;
+	void (*refresh_task_table)(void);
+	unsigned long flags;
+	unsigned long task_start;
+	unsigned long task_end;
+	void *task_local;
+	int max_tasks;
+	int nr_threads;
+	unsigned long running_tasks;
+	unsigned long retries;
+	unsigned long panicmsg;
+	int panic_processor;
+	unsigned long *idle_threads;
+	unsigned long *panic_threads;
+	unsigned long *active_set;
+	unsigned long *panic_ksp;
+	unsigned long *hardirq_ctx;
+	unsigned long *hardirq_tasks;
+	unsigned long *softirq_ctx;
+	unsigned long *softirq_tasks;
+	unsigned long panic_task;
+	unsigned long this_task;
+	int pidhash_len;
+	unsigned long pidhash_addr;
+	unsigned long last_task_read;
+	unsigned long last_thread_info_read;
+	unsigned long last_mm_read;
+	char *task_struct;
+	char *thread_info;
+	char *mm_struct;
+	unsigned long init_pid_ns;
+	//struct tgid_context *tgid_array;
+	//struct tgid_context *last_tgid;
+	unsigned long tgid_searches;
+	unsigned long tgid_cache_hits;
+	long filepages;
+	long anonpages;
+	unsigned long stack_end_magic;
+	unsigned long pf_kthread;
+	unsigned long pid_radix_tree;
+	int callbacks;
+	struct task_context **context_by_task; /* task_context sorted by task addr */
+	unsigned long pid_xarray;
 };
-
-
 
 static inline int string_exists(char *s) { return (s ? TRUE : FALSE); }
 #define STREQ(A, B)      (string_exists((char *)A) && string_exists((char *)B) && \
@@ -82,7 +126,9 @@ static inline int string_exists(char *s) { return (s ? TRUE : FALSE); }
 #define STRNEQ(A, B)     (string_exists((char *)A) && string_exists((char *)B) && \
 	(strncmp((char *)(A), (char *)(B), strlen((char *)(B))) == 0))
 
+extern unsigned long htol(char *s, int flags, int *errptr);
 extern int file_exists(char *file, struct stat *sp);
+extern unsigned long lookup_symbol_from_proc_kallsyms(char *symname);
 
 extern long request_gdb(struct gnu_request *req);
 extern long request_pahole(struct gnu_request *req);

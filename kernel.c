@@ -1,5 +1,28 @@
 #include <stdio.h>
+#include "kernel.h"
+#include "common.h"
 
+/* FIXME */
+unsigned long kernel_pgd[NR_CPUS];
+
+extern struct mach_table *kcoreinfo;
+
+/*
+ * For processors with "traditional" kernel/user address space distinction.
+ */
+int generic_is_kvaddr(unsigned long addr)
+{
+	return (addr >= ULONG(kcoreinfo->kvbase));
+}
+
+/*
+ * NOTE: Perhaps even this generic version should tighten up requirements
+ *        by calling uvtop()?
+ */
+int generic_is_uvaddr(unsigned long addr, struct task_context *tc)
+{
+	return (addr < ULONG(kcoreinfo->kvbase));
+}
 
 /*
  * vmlinux: including kernel symbol;

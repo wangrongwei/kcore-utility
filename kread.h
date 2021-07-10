@@ -9,10 +9,10 @@
 
 #include <elf.h>
 #include <sys/types.h>
+#include "common.h"
 #include "error.h"
 
 #define MAX_KCORE_ELF_HEADER_SIZE (32768)
-typedef uint64_t physaddr_t;
 #define PADDR_NOT_AVAILABLE (0x1ULL)
 #define KCORE_USE_VADDR      (-1ULL)
 
@@ -47,17 +47,27 @@ struct proc_kcore_data {
 #define VM_L4_4K      (0x100)
 #define UNW_4_14      (0x200)
 
-#define ARM64 1
-
 #ifdef ARM64
 #define _64BIT_
-#define MACHINE_TYPE "ARM64"    
+#define MACHINE_TYPE "ARM64"
 
 //((unsigned long)(X) - (machdep->machspec->physvirt_offset))
 #define PTOV(X) \
 	((unsigned long)(X) - (0x10000))
 
 #define VTOP(X) arm64_VTOP((unsigned long)(X))
+#endif
+
+#ifdef X86_64
+#define _64BIT_
+#define MACHINE_TYPE "x86_64"
+
+//((unsigned long)(X) - (machdep->machspec->physvirt_offset))
+#define PTOV(X) \
+	((unsigned long)(X) - (0x10000))
+
+//#define VTOP(X) arm64_VTOP((unsigned long)(X))
+#define VTOP(X) 0
 #endif
 
 #define BADADDR  ((unsigned long)(-1))
@@ -71,5 +81,10 @@ extern void error_msg(const char *fmt, ...);
 extern void debug_msg(const char *fmt, ...);
 
 extern int file_exists(char *file, struct stat *sp);
+extern void symbols_init_from_kallsyms(void);
+
+extern void dump_task(pid_t pid);
+extern void stat_pgtable(pid_t pid);
+extern void dump_pte(pid_t pid, unsigned long addr);
 extern char *KERNEL_FILE[];
 #endif

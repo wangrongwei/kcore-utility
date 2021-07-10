@@ -1,9 +1,11 @@
 #include <unistd.h>
+#include "common.h"
 #include "kcore.h"
 #include "kread.h"
 
 #include "gdb.h"
 
+unsigned long symbol_init_task;
 unsigned long symbol_init_pid_ns;
 unsigned long pid_xarray;
 struct offset_table offset_table = { 0 };
@@ -11,7 +13,7 @@ struct size_table size_table = { 0 };
 
 static struct proc_kcore_data proc_kcore_data = { 0 };
 static struct proc_kcore_data *pkd = &proc_kcore_data;
-static int kcore_fd;
+int kcore_fd;
 
 /*
  * Strip line-ending whitespace.
@@ -182,8 +184,7 @@ next:
 			expression = 1;
 			while (expression > 0) {
 				i++;
-				switch (str[i])
-				{
+				switch (str[i]) {
 				case '(':
 					expression++;
 					break;
@@ -287,7 +288,7 @@ int hexadecimal(char *s, int count)
 }
 
 /*
- *  Convert a string to a hexadecimal long value.
+ * Convert a string to a hexadecimal long value.
  */
 unsigned long htol(char *s, int flags, int *errptr)
 {
@@ -359,7 +360,124 @@ htol_error:
 }
 
 /*
- *  Get a symbol value from /proc/kallsyms.
+ * Shifts the contents of a string to the right by cnt characters,
+ * inserting space characters.  (caller confirms space is available)
+ */
+char *shift_string_right(char *s, int cnt)
+{
+	int origlen;
+
+	if (!cnt)
+		return(s);
+
+	origlen = strlen(s);
+	memmove(s+cnt, s, origlen);
+	s[origlen+cnt] = NULLCHAR;
+	return(memset(s, ' ', cnt));
+}
+
+/*
+ * Create a string in a buffer of a given size, centering, or justifying 
+ * left or right as requested.  If the opt argument is used, then the string
+ * is created with its string/integer value.  If opt is NULL, then the
+ * string is already in contained in string s (not justified).  Note that
+ * flag LONGLONG_HEX implies that opt is a ulonglong pointer to the 
+ * actual value.
+ */
+char *mkstring(char *s, int size, unsigned long flags, const char *opt)
+{
+	int len;
+	int extra;
+	int left;
+	int right;
+
+	switch (flags & (LONG_DEC|SLONG_DEC|LONG_HEX|INT_HEX|INT_DEC|LONGLONG_HEX|ZERO_FILL)) {
+	case LONG_DEC:
+		sprintf(s, "%lu", (unsigned long)opt);
+		break;
+	case SLONG_DEC:
+		sprintf(s, "%ld", (unsigned long)opt);
+		break;
+	case LONG_HEX:
+		sprintf(s, "%lx", (unsigned long)opt);
+		break;
+	case (LONG_HEX|ZERO_FILL):
+		if (VADDR_PRLEN == 8)
+			sprintf(s, "%08lx", (unsigned long)opt);
+		else if (VADDR_PRLEN == 16)
+			sprintf(s, "%016lx", (unsigned long)opt);
+		break;
+	case INT_DEC:
+		sprintf(s, "%u", (unsigned int)((unsigned long)opt));
+		break;
+	case INT_HEX:
+		sprintf(s, "%x", (unsigned int)((unsigned long)opt));
+		break;
+	case LONGLONG_HEX:
+		sprintf(s, "%llx", *((ulonglong *)opt));
+		break;
+	default:
+		if (opt)
+			strcpy(s, opt);
+		break;
+	}
+
+	/*
+	 * At this point, string s has the string to be justified,
+	 * and has room to work with.  The relevant flags from this
+	 * point on are of CENTER, LJUST and RJUST.  If the length 
+	 * of string s is already larger than the requested size, 
+	 * just return it as is.
+	 */
+	len = strlen(s);
+	if (size <= len) 
+		return(s);
+	extra = size - len;
+
+	if (flags & CENTER) {
+		/*
+		 * If absolute centering is not possible, justify the
+		 * string as requested -- or to the left if no justify
+		 * argument was passed in.
+		 */
+		if (extra % 2) {
+			switch (flags & (LJUST|RJUST)) {
+			default:
+			case LJUST:
+				right = (extra/2) + 1;
+				left = extra/2;
+				break;
+			case RJUST:
+				right = extra/2;
+				left = (extra/2) + 1;
+				break;
+			}
+		}
+		else 
+			left = right = extra/2;
+
+		shift_string_right(s, left);
+		len = strlen(s);
+		memset(s + len, ' ', right);
+		s[len + right] = NULLCHAR;
+	
+		return(s);
+	}
+
+	if (flags & LJUST) {
+		len = strlen(s);
+		memset(s + len, ' ', extra);
+		s[len + extra] = NULLCHAR;
+	} else if (flags & RJUST) 
+		shift_string_right(s, extra);
+
+	return(s);
+}
+
+/*
+ * Get a symbol value from /proc/kallsyms.
+ *
+ * This function will rename lookup_symbol_from_kallsyms()
  */
 unsigned long lookup_symbol_from_proc_kallsyms(char *symname)
 {
@@ -398,7 +516,9 @@ unsigned long lookup_symbol_from_proc_kallsyms(char *symname)
 
 void arch_kernel_init(void)
 {
+#ifdef ARM64
 	arm64_kernel_init();
+#endif
 }
 
 /*
@@ -512,7 +632,7 @@ void kcore_init(void)
 }
 
 /*
- *  Read from /proc/kcore.
+ * Read from /proc/kcore.
  */
 int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_t paddr) 
 {
@@ -532,10 +652,10 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 	}
 #endif
 	/*
-	 *  Unless specified otherwise, turn the physical address into 
-	 *  a unity-mapped kernel virtual address, which should work 
-	 *  for 64-bit architectures, and for lowmem access for 32-bit
-	 *  architectures.
+	 * Unless specified otherwise, turn the physical address into 
+	 * a unity-mapped kernel virtual address, which should work 
+	 * for 64-bit architectures, and for lowmem access for 32-bit
+	 * architectures.
 	 */
 	if (paddr == KCORE_USE_VADDR)
 		kvaddr = addr;
@@ -592,11 +712,27 @@ void kcore_exit(void)
 		close(kcore_fd);
 }
 
+int kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int verbose)
+{
+	physaddr_t unused;
+
+#ifdef X86_64
+	return (x86_kvtop(tc ? tc : CURRENT_CONTEXT(), kvaddr, 
+		paddr ? paddr : &unused, verbose));
+#elif ARM64
+	return (arm64_kvtop(tc ? tc : CURRENT_CONTEXT(), kvaddr, 
+		paddr ? paddr : &unused, verbose));
+#else
+	printf("build error");
+	return -1;
+#endif
+}
+
 /*
  * First, we need translate addr into paddr. 'memtype' has following value:
  * 	KVADDR UADDR
  */
-int arm64_readmem(ulonglong addr, int memtype, void *buffer, long size,
+int readmem(ulonglong addr, int memtype, void *buffer, long size,
 	char *type, unsigned long error_handle)
 {
 	long cnt;
@@ -604,21 +740,25 @@ int arm64_readmem(ulonglong addr, int memtype, void *buffer, long size,
 	unsigned long paddr;
 
 	/* translate addr into paddr */
-	
+	switch (memtype) {
+	case UVADDR:
+		/* TODO */
+		break;
+	case KVADDR:
+		if (!kvtop(CURRENT_CONTEXT(), addr, &paddr, 0)) {
+			ERROR("failed");
+			return FALSE;
+		}
+		break;
+	case PHYSADDR:
+		paddr = addr;
+		break;
+	}
 	/* read data by paddr */
 	read_proc_kcore(kcore_fd, bufptr, cnt,
 		(memtype == PHYSADDR) || (memtype == XENMACHADDR) ? 0 : addr, paddr);
-}
 
-/* Initial symbols from kallsyms */
-void symbols_init_from_kallsyms(void)
-{
-	symbol_init_pid_ns = lookup_symbol_from_proc_kallsyms("init_pid_ns");
-	if (symbol_init_pid_ns == BADVAL) {
-		printf("failed: initial init_pid_ns");
-	}
-	/* task */
-	task_symbol_init();
+	return TRUE;
 }
 
 /*
@@ -640,8 +780,24 @@ void task_symbol_init(void)
 	pid_xarray = symbol_init_pid_ns +
 		OFFSET(pid_namespace_idr) + OFFSET(idr_idr_rt);
 	/* KVADDR -> paddr -> value */
-	arm64_readmem(pid_xarray + OFFSET(xarray_xa_head), KVADDR, &node_p,
+	readmem(pid_xarray + OFFSET(xarray_xa_head), KVADDR, &node_p,
 		sizeof(void *), "xarray xa_head", FAULT_ON_ERROR);
+}
+
+/* Initial symbols from kallsyms */
+void symbols_init_from_kallsyms(void)
+{
+	symbol_init_pid_ns = lookup_symbol_from_proc_kallsyms("init_pid_ns");
+	if (symbol_init_pid_ns == BADVAL) {
+		printf("failed: initial init_pid_ns");
+	}
+
+	symbol_init_task = lookup_symbol_from_proc_kallsyms("init_task");
+	if (symbol_init_task == BADVAL) {
+		printf("failed: initial init_pid_ns");
+	}
+	/* task */
+	task_symbol_init();
 }
 
 /*
@@ -755,6 +911,10 @@ long datatype_info(char *name, char *member, struct datatype_member *dm)
 	memset(req, 0, sizeof(*req));
 	if (dm == STRUCT_SIZE_REQUEST || dm == NULL)
 		req->command = GNU_PASS_THROUGH;
+	else if (dm == MEMBER_SIZE_REQUEST) {
+		ERROR("NOT support MEMBER_SIZE_REQUEST");
+		return -1;
+	}
 	else
 		req->command = GNU_GET_DATATYPE;
 	req->flags |= GNU_RETURN_ON_ERROR;
