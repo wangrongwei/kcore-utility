@@ -12,6 +12,8 @@
 #include <fcntl.h>
 #include <locale.h>
 #include <getopt.h>
+#include <signal.h> /* for signal */
+#include <execinfo.h> /* for backtrace() */
 #include <pwd.h>
 
 #include <common.h>
@@ -24,6 +26,7 @@ int vmadump_enabled = 0; /* dump detailed vma */
 
 /* For debug, the env is KD_DEBUG */
 int kr_debug = 0;
+extern void signal_handler(int signo);
 
 static const char optstring[] =
 	"+a:Ab:cCdDe:E:fFhiI:k:o:O:p:P:qrs:S:tTu:vVwxX:yzZ";
@@ -191,6 +194,8 @@ static void init(int argc, char *argv[])
 
 	/* env */
 	kr_debug = strtol(getenv("KR_DEBUG"), NULL, 0);
+	signal(SIGSEGV, signal_handler);
+	signal(SIGABRT, signal_handler);
 }
 
 /*

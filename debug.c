@@ -2,7 +2,44 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h> /* for signal */
+#include <execinfo.h> /* for backtrace() */
 #include <errno.h>
+
+#define BACKTRACE_SIZE 16
+
+void dump_stack(void)
+{
+	int j, nptrs;
+	void *buffer[BACKTRACE_SIZE];
+	char **strings;
+
+	nptrs = backtrace(buffer, BACKTRACE_SIZE);
+	printf("backtrace() returned %d addresses\n", nptrs);
+
+	strings = backtrace_symbols(buffer, nptrs);
+	if (strings == NULL) {
+		perror("backtrace_symbols");
+		exit(EXIT_FAILURE);
+	}
+
+	for (j = 0; j < nptrs; j++)
+		printf("  [%02d] %s\n", j, strings[j]);
+
+	free(strings);
+}
+
+void signal_handler(int signo)
+{
+	printf("\n---------->catch signal %d<----------\n", signo);
+	printf("dump stack start...\n");
+	dump_stack();
+	printf("dump stack end...\n");
+
+	signal(signo, SIG_DFL);
+	raise(signo);
+}
 
 static void __error_msg(int err_no, const char *fmt, va_list p)
 {
