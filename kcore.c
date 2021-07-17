@@ -719,7 +719,7 @@ int kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int 
 #ifdef X86_64
 	return (x86_kvtop(tc ? tc : CURRENT_CONTEXT(), kvaddr, 
 		paddr ? paddr : &unused, verbose));
-#elif ARM64
+#elif defined(ARM64)
 	return (arm64_kvtop(tc ? tc : CURRENT_CONTEXT(), kvaddr, 
 		paddr ? paddr : &unused, verbose));
 #else
