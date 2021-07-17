@@ -18,7 +18,7 @@ OBJCOPY = objcopy
 
 C_FLAGS   = -c -ggdb -fno-stack-protector -I include
 
-LD_FLAGS  = 
+LD_FLAGS  = -rdynamic
 
 .c.o:
 	@echo $(C_SOURCES)
