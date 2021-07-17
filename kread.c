@@ -168,7 +168,8 @@ static void init(int argc, char *argv[])
 			ptedump_enabled = 1;
 			/* FIXME: pid1,pid2,pid3 */
 			target_pid = (pid_t)strtoul(optarg, NULL, 0);
-			target_addr = htol(argv[optind], RETURN_ON_ERROR, NULL);
+			if (argc - 1 >= optind)
+				target_addr = htol(argv[optind], RETURN_ON_ERROR, NULL);
 			break;
 		case 'P':
 			/* TODO */
@@ -193,7 +194,9 @@ static void init(int argc, char *argv[])
 	}
 
 	/* env */
-	kr_debug = strtol(getenv("KR_DEBUG"), NULL, 0);
+	char *env = getenv("KR_DEBUG");
+	if (env != NULL)
+		kr_debug = strtol(env, NULL, 0);
 	signal(SIGSEGV, signal_handler);
 	signal(SIGABRT, signal_handler);
 }
