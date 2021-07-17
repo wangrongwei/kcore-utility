@@ -171,6 +171,19 @@ struct arch_machine_descriptor {
 typedef signed int s32;
 
 /*
+ * 3-levels / 4K pages
+ */
+#define PTRS_PER_PGD_L3_4K   (512)
+#define PTRS_PER_PMD_L3_4K   (512)
+#define PTRS_PER_PTE_L3_4K   (512)
+#define PGDIR_SHIFT_L3_4K    (30)
+#define PGDIR_SIZE_L3_4K     ((1UL) << PGDIR_SHIFT_L3_4K)
+#define PGDIR_MASK_L3_4K     (~(PGDIR_SIZE_L3_4K-1))
+#define PMD_SHIFT_L3_4K      (21)
+#define PMD_SIZE_L3_4K       (1UL << PMD_SHIFT_L3_4K)
+#define PMD_MASK_L3_4K       (~(PMD_SIZE_L3_4K-1))
+
+/*
  * 4-levels / 4K pages
  * 48-bit VA
  */

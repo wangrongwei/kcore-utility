@@ -137,8 +137,6 @@ void arm64_kernel_init(void)
 
 	kcoreinfo->mdesp =
 		(struct arch_machine_descriptor *)malloc(sizeof(struct arch_machine_descriptor));
-	arm64_init_kernel_pgd();
-	arm64_calc_physvirt_offset();
 	if (VA_BITS_ACTUAL) {
 		kcoreinfo->mdesp->page_offset = ARM64_PAGE_OFFSET_ACTUAL;
 		kcoreinfo->kvbase = ARM64_PAGE_OFFSET_ACTUAL;
@@ -146,10 +144,16 @@ void arm64_kernel_init(void)
 		kcoreinfo->mdesp->page_offset = ARM64_PAGE_OFFSET;
 		kcoreinfo->kvbase = ARM64_VA_START;
 	}
-
+	arm64_init_kernel_pgd();
+	arm64_calc_physvirt_offset();
 	if (lookup_symbol_from_proc_kallsyms("kimage_voffset") != 0)
 		kcoreinfo->flags |= NEW_VMEMMAP;
 
+	kcoreinfo->ptrs_per_pgd = PTRS_PER_PGD_L3_4K;
+	kcoreinfo->pgd = (char *)malloc(PTRS_PER_PGD_L3_4K * 8);
+	kcoreinfo->pud = (char *)malloc(PTRS_PER_PUD_L4_4K * 8);
+	kcoreinfo->pmd = (char *)malloc(PTRS_PER_PMD_L3_4K * 8);
+	kcoreinfo->ptbl = (char *)malloc(PTRS_PER_PTE_L3_4K * 8);
 	if (kcoreinfo->flags & NEW_VMEMMAP) {
 		/* Prioritize support for this situation */
 		kcoreinfo->mdesp->kimage_text = lookup_symbol_from_proc_kallsyms("_text");
