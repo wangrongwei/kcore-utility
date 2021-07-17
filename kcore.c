@@ -880,6 +880,8 @@ long request_pahole(struct gnu_request *req)
 			if (ret != -1)
 				ret /= 8;
 			else {
+				if (kr_debug)
+					printf("failed: %s\n", buf);
 				/* pahole -V %s -C %s | grep -m 1 %s|sed 's/.*\(.................\)$/\1/' */
 				sprintf(buf, "pahole -V %s -C %s | grep -m 1 %s|sed \'s/.*\\(.................\\)$/\\1/\'|awk \'{print $2}\'",
 					current_vmlinux_path, req->name, req->member);

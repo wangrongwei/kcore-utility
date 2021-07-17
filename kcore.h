@@ -38,6 +38,9 @@
 
 #define MAX_HEXADDR_STRLEN (16)
 
+/* debug */
+extern int kr_debug;
+
 /* vmlinux */
 extern char *current_linux_release;
 extern char *current_vmlinux_path;

@@ -22,6 +22,9 @@ int pgtable_enabled = 0; /* dump pgtable for PID */
 int ptedump_enabled = 0;
 int vmadump_enabled = 0; /* dump detailed vma */
 
+/* For debug, the env is KD_DEBUG */
+int kr_debug = 0;
+
 static const char optstring[] =
 	"+a:Ab:cCdDe:E:fFhiI:k:o:O:p:P:qrs:S:tTu:vVwxX:yzZ";
 
@@ -186,6 +189,8 @@ static void init(int argc, char *argv[])
 		}
 	}
 
+	/* env */
+	kr_debug = strtol(getenv("KR_DEBUG"), NULL, 0);
 }
 
 /*
