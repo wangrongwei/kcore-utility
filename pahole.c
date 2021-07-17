@@ -7,7 +7,7 @@
 
 long exec_cmd_return_long(char *cmd)
 {
-	char buf[100];
+	char buf[100] = {'\0'};
 	int des_p[2], pid;
 	int nbytes;
 

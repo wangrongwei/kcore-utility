@@ -880,13 +880,13 @@ long request_pahole(struct gnu_request *req)
 			if (ret != -1)
 				ret /= 8;
 			else {
-				sprintf(buf, "pahole -V %s -C %s | grep -m 1 %s|sed \'s/.*\(.................\)$/\1/\'|awk \'{print $2}\'",
+				/* pahole -V %s -C %s | grep -m 1 %s|sed 's/.*\(.................\)$/\1/' */
+				sprintf(buf, "pahole -V %s -C %s | grep -m 1 %s|sed \'s/.*\\(.................\\)$/\\1/\'|awk \'{print $2}\'",
 					current_vmlinux_path, req->name, req->member);
 				ret = exec_cmd_return_long(buf);
 				if (ret == -1)
 					goto tried_and_failed;
 				/* success */
-				ret /= 8;
 			}
 			goto success;
 		}
