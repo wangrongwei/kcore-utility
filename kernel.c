@@ -12,7 +12,7 @@ extern struct mach_table *kcoreinfo;
  */
 int generic_is_kvaddr(unsigned long addr)
 {
-	return (addr >= ULONG(kcoreinfo->kvbase));
+	return (addr >= (unsigned long)(kcoreinfo->kvbase));
 }
 
 /*
