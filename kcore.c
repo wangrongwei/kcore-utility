@@ -874,7 +874,7 @@ long request_pahole(struct gnu_request *req)
 		else {
 			/* request member offset */
 			long size = request_pahole_member_number(req->name);
-			sprintf(buf, "pahole -JV %s | grep -A %d -m 1 %s|awk \'if($1==\"%s\"){print $3}\'",
+			sprintf(buf, "pahole -JV %s | grep -A %d -m 1 %s|awk \'{if($1==\"%s\"){print $3}}\'",
 				current_vmlinux_path, size, req->name, req->member);
 			ret = exec_cmd_return_long(buf) / 8;
 			goto success;
