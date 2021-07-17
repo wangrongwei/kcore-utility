@@ -861,10 +861,10 @@ long request_gdb(struct gnu_request *req)
  */
 long request_pahole(struct gnu_request *req)
 {
-	char buf[100];
+	char buf[200];
 	int cmd = req->command;
 	int nbytes;
-	int ret;
+	long ret;
 
 	switch (cmd) {
 	case GNU_PASS_THROUGH:
@@ -876,7 +876,18 @@ long request_pahole(struct gnu_request *req)
 			long size = request_pahole_member_number(req->name);
 			sprintf(buf, "pahole -JV %s | grep -A %d -m 1 %s|awk \'{if($1==\"%s\"){print $3}}\' | tr -d \"a-zA-Z=_\"",
 				current_vmlinux_path, size, req->name, req->member);
-			ret = exec_cmd_return_long(buf) / 8;
+			ret = exec_cmd_return_long(buf);
+			if (ret != -1)
+				ret /= 8;
+			else {
+				sprintf(buf, "pahole -V %s -C %s | grep -m 1 %s|sed \'s/.*\(.................\)$/\1/\'|awk \'{print $2}\'",
+					current_vmlinux_path, req->name, req->member);
+				ret = exec_cmd_return_long(buf);
+				if (ret == -1)
+					goto tried_and_failed;
+				/* success */
+				ret /= 8;
+			}
 			goto success;
 		}
 	break;
@@ -888,10 +899,12 @@ long request_pahole(struct gnu_request *req)
 		printf("something error!");
 	break;
 	}
-
 	ret = exec_cmd_return_long(buf);
 success:
 	return ret;
+tried_and_failed:
+	fprintf(stderr, "tried and failed: %s\n", buf);
+	return -1;
 }
 
 /*
@@ -906,6 +919,7 @@ long datatype_info(char *name, char *member, struct datatype_member *dm)
 {
 	struct gnu_request request, *req = &request;
 	char buf[BUFSIZE];
+	long retval;
 
 	strcpy(buf, name);
 	memset(req, 0, sizeof(*req));
@@ -924,5 +938,8 @@ long datatype_info(char *name, char *member, struct datatype_member *dm)
 
 	// gdb_command_funnel(req);
 	/* request data form gdb */
-	return request_pahole(req);
+	retval = request_pahole(req);
+	if (retval == -1)
+		exit(-1);
+	return retval;
 }

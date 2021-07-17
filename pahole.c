@@ -32,6 +32,10 @@ long exec_cmd_return_long(char *cmd)
 		waitpid(pid, &status, 0);
 		nbytes = read(des_p[0], buf, sizeof(buf));
 		printf("struct size buf: %s\n", buf);
+		if (buf[0] == '\0') {
+			printf("%s: NIL\n", cmd);
+			return -1;
+		}
 	}
 
 	return strtol(buf, NULL, 0);
