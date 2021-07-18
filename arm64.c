@@ -237,10 +237,16 @@ int do_xarray_traverse(unsigned long ptr, int is_root, struct xarray_ops *ops)
 
 	/* Generally, XA_CHUNK_SHIFT = 4 or 6 */
 	if (XA_CHUNK_SHIFT == UNINITIALIZED) {
-		if ((nlen = MEMBER_SIZE("xa_node", "slots")) <= 0)
-			ERROR("cannot determine length of xa_node.slots[] array\n");
-		nlen /= sizeof(void *);
-		XA_CHUNK_SHIFT = ffsl(nlen) - 1;
+		/*
+		 * FIXME: set XA_CHUNK_SHIFT=6 directly, the right way is request the
+		 * size from 'xa_node' struct:
+		 *
+		 * if ((nlen = MEMBER_SIZE("xa_node", "slots")) <= 0)
+		 * 	ERROR("cannot determine length of xa_node.slots[] array\n");
+		 * nlen /= sizeof(void *);
+		 * XA_CHUNK_SHIFT = ffsl(nlen) - 1;
+		 */
+		XA_CHUNK_SHIFT = 6;
 		XA_CHUNK_SIZE = (1UL << XA_CHUNK_SHIFT);
 		XA_CHUNK_MASK = (XA_CHUNK_SIZE-1);
 	}
