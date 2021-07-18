@@ -144,8 +144,7 @@ void arm64_kernel_init(void)
 		kcoreinfo->mdesp->page_offset = ARM64_PAGE_OFFSET;
 		kcoreinfo->kvbase = ARM64_VA_START;
 	}
-	arm64_init_kernel_pgd();
-	arm64_calc_physvirt_offset();
+
 	if (lookup_symbol_from_proc_kallsyms("kimage_voffset") != 0)
 		kcoreinfo->flags |= NEW_VMEMMAP;
 
@@ -178,6 +177,8 @@ void arm64_kernel_init(void)
 		kcoreinfo->mdesp->modules_end = ARM64_PAGE_OFFSET - 1;
 		kcoreinfo->mdesp->vmalloc_start_addr = ARM64_VA_START;
 	}
+	arm64_init_kernel_pgd();
+	arm64_calc_physvirt_offset();
 	kcoreinfo->mdesp->vmalloc_end = ARM64_VMALLOC_END;
 	kcoreinfo->mdesp->vmemmap_vaddr = ARM64_VMEMMAP_VADDR;
 	kcoreinfo->mdesp->vmemmap_end = ARM64_VMEMMAP_END;
