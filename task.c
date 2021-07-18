@@ -18,34 +18,34 @@ allocate_task_space(int cnt)
 {
 	if (tt->context_array == NULL) {
 		if (!(tt->task_local = (void *)malloc(cnt * sizeof(void *))))
-			error(FATAL, "cannot malloc kernel task array (%d tasks)", cnt);
+			fprintf(stderr, "cannot malloc kernel task array (%d tasks)", cnt);
 
 		if (!(tt->context_array = (struct task_context *)malloc(cnt * sizeof(struct task_context))))
-			error(FATAL, "cannot malloc context array (%d tasks)", cnt);
+			printf(stderr, "cannot malloc context array (%d tasks)", cnt);
 		if (!(tt->context_by_task = (struct task_context **)malloc(cnt * sizeof(struct task_context*))))
-			error(FATAL, "cannot malloc context_by_task array (%d tasks)",
+			fprintf(stderr, "cannot malloc context_by_task array (%d tasks)",
 				cnt);
 		/*
 		 * if (!(tt->tgid_array = (struct tgid_context *)malloc(cnt * sizeof(struct tgid_context))))
-		 * 	error(FATAL, "cannot malloc tgid array (%d tasks)",
+		 * 	fprintf("cannot malloc tgid array (%d tasks)",
 		 * 		cnt);
 		 */
 	} else {
 		if (!(tt->task_local = (void *)realloc(tt->task_local, cnt * sizeof(void *))))
-			error(FATAL, "cannot realloc kernel task array (%d tasks)", cnt);
+			fprintf(stderr, "cannot realloc kernel task array (%d tasks)", cnt);
 
 		if (!(tt->context_array = (struct task_context *)realloc(tt->context_array,
 				cnt * sizeof(struct task_context))))
-			error(FATAL, "cannot realloc context array (%d tasks)", cnt);
+			fprintf(stderr, "cannot realloc context array (%d tasks)", cnt);
 
 		if (!(tt->context_by_task = (struct task_context **)realloc(tt->context_by_task,
 				cnt * sizeof(struct task_context*))))
-			error(FATAL, "cannot realloc context_by_task array (%d tasks)", cnt);
+			fprintf(stderr, "cannot realloc context_by_task array (%d tasks)", cnt);
 
 		/*
 		 * if (!(tt->tgid_array = (struct tgid_context *)realloc(tt->tgid_array,
 		 * 		cnt * sizeof(struct tgid_context))))
-		 * 	error(FATAL, "%scannot realloc tgid array (%d tasks)",
+		 * 	fprintf(stderr, "%scannot realloc tgid array (%d tasks)",
 		 * 		(pc->flags & RUNTIME) ? "" : "\n", cnt);
 		 */
 	}
@@ -100,10 +100,10 @@ static char * lookup_task_xarray_task_table(pid_t target)
 
 retry_xarray:
 	if (retries)
-		ERROR("\ncannot gather a stable task list via xarray\n");
+		printf("\ncannot gather a stable task list via xarray\n");
 
 	if (retries == MAX_UNLIMITED_TASK_RETRIES)
-		ERROR("\ncannot gather a stable task list via xarray (%d retries)\n",
+		printf("\ncannot gather a stable task list via xarray (%d retries)\n",
 			retries);
 
 	if (count > tt->max_tasks) {
