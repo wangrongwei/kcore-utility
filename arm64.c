@@ -280,7 +280,7 @@ int do_xarray_traverse(unsigned long ptr, int is_root, struct xarray_ops *ops)
 		}
 	}
 
-	if (1) {
+	if (kr_debug) {
 		fprintf(stdout, "xa_node.slots[%ld]\n", XA_CHUNK_SIZE);
 		fprintf(stdout, "pointer at %lx (is_root? %s):\n",
 			node_p, is_root ? "yes" : "no");
