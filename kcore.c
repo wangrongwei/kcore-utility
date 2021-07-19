@@ -678,8 +678,10 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 			break;
 		}
 	}
-	if (offset != UNINITIALIZED)
+	if (offset == UNINITIALIZED) {
+		ERROR("failed: read kcore error");
 		return READ_ERROR;
+	}
 
 	for (i = 0; i < pkd->segments; i++) {
 		lp64 = pkd->load64 + i;
@@ -691,8 +693,10 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 		}
 	}
 
-	if (offset == UNINITIALIZED)
+	if (offset == UNINITIALIZED) {
+		ERROR("failed: seek error when read kcore");
 		return SEEK_ERROR;
+	}
 
 	if (lseek(fd, offset, SEEK_SET) != offset)
 		perror("lseek");
@@ -724,7 +728,7 @@ int kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int 
 		paddr ? paddr : &unused, verbose));
 #else
 	printf("build error");
-	return -1;
+	return FALSE;
 #endif
 }
 
@@ -746,7 +750,7 @@ int readmem(ulonglong addr, int memtype, void *buffer, long size,
 		break;
 	case KVADDR:
 		if (!kvtop(CURRENT_CONTEXT(), addr, &paddr, 0)) {
-			ERROR("failed");
+			ERROR("failed: readmem");
 			return FALSE;
 		}
 		break;
@@ -869,7 +873,7 @@ long request_pahole(struct gnu_request *req)
 	switch (cmd) {
 	case GNU_PASS_THROUGH:
 		if (req->member == NULL)
-			sprintf(buf, "pahole %s --sizes|grep -m 1 %s|awk \'{print $2}\'",
+			sprintf(buf, "pahole %s --sizes|awk \'{if($1==\"%s\"){print $2; exit}}\'",
 				current_vmlinux_path, req->name);
 		else {
 			/* request member offset */

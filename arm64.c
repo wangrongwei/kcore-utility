@@ -63,6 +63,8 @@ arm64_calc_physvirt_offset(void)
 
 	if ((sp = lookup_symbol_from_proc_kallsyms("physvirt_offset")) &&
 			kcoreinfo->mdesp->kimage_voffset) {
+		if (sp == BADVAL)
+			return;
 		if (read_proc_kcore(kcore_fd, &physvirt_offset, sizeof(physvirt_offset),
 			sp, sp - kcoreinfo->mdesp->kimage_voffset) > 0)
 		{
@@ -129,6 +131,7 @@ void arm64_kernel_init(void)
 	MEMBER_OFFSET_INIT(pid_namespace_idr, "pid_namespace", "idr");
 	MEMBER_OFFSET_INIT(idr_idr_rt, "idr", "idr_rt");
 
+	STRUCT_SIZE_INIT(pid, "pid");
 	STRUCT_SIZE_INIT(xarray, "xarray");
 	STRUCT_SIZE_INIT(xa_node, "xa_node");
 	MEMBER_OFFSET_INIT(xarray_xa_head, "xarray", "xa_head");
@@ -619,8 +622,7 @@ unsigned long arm64_VTOP(unsigned long addr)
 	struct arch_machine_descriptor *desp= kcoreinfo->mdesp;
 
 	if (kcoreinfo->flags & NEW_VMEMMAP) {
-		if (VA_START && (addr >= desp->kimage_text) &&
-				(addr <= desp->kimage_end)) {
+		if (VA_START && (addr >= desp->kimage_text) && (addr <= desp->kimage_end)) {
 			return addr - desp->kimage_voffset;
 		}
 

@@ -21,7 +21,7 @@ int generic_is_kvaddr(unsigned long addr)
  */
 int generic_is_uvaddr(unsigned long addr, struct task_context *tc)
 {
-	return (addr < ULONG(kcoreinfo->kvbase));
+	return (addr < (unsigned long)(kcoreinfo->kvbase));
 }
 
 /*

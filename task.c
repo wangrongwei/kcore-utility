@@ -102,9 +102,11 @@ retry_xarray:
 	if (retries)
 		printf("\ncannot gather a stable task list via xarray\n");
 
-	if (retries == MAX_UNLIMITED_TASK_RETRIES)
+	if (retries == MAX_UNLIMITED_TASK_RETRIES) {
 		printf("\ncannot gather a stable task list via xarray (%d retries)\n",
 			retries);
+		exit(-1);
+	}
 
 	if (count > tt->max_tasks) {
 		tt->max_tasks = count + TASK_SLUSH;
@@ -156,7 +158,7 @@ retry_xarray:
 		else
 			task_addr = pid_tasks_0 - OFFSET(task_struct_pid_links);
 
-		if (1)
+		if (kr_debug)
 			printf("pid: %lx  ns: %lx  tasks[0]: %lx task: %lx\n",
 				next, upid_ns, pid_tasks_0, task_addr);
 
