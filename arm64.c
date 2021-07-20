@@ -122,6 +122,7 @@ static void arm64_init_kernel_pgd(void)
 void arm64_kernel_init(void)
 {
 	kcoreinfo->flags |= VM_L4_4K;
+	STRUCT_SIZE_INIT(task_struct, "task_struct");
 	MEMBER_OFFSET_INIT(task_struct_mm, "task_struct", "mm");
 	MEMBER_OFFSET_INIT(task_struct_tasks, "task_struct", "tasks");
 	MEMBER_OFFSET_INIT(mm_struct_mmap, "mm_struct", "mmap");
@@ -137,6 +138,12 @@ void arm64_kernel_init(void)
 	MEMBER_OFFSET_INIT(xarray_xa_head, "xarray", "xa_head");
 	MEMBER_OFFSET_INIT(xa_node_slots, "xa_node", "slots");
 	MEMBER_OFFSET_INIT(xa_node_shift, "xa_node", "shift");
+	MEMBER_OFFSET_INIT(pid_numbers, "pid", "numbers");
+	MEMBER_OFFSET_INIT(upid_ns, "upid", "ns");
+	MEMBER_OFFSET_INIT(pid_tasks, "pid", "tasks");
+	// MEMBER_OFFSET_INIT(task_struct_pids, "task_struct", "pids");
+	MEMBER_OFFSET_INIT(task_struct_pid_links, "task_struct", "pid_links");
+	ASSIGN_OFFSET(task_struct_pids) = -1;
 
 	kcoreinfo->mdesp =
 		(struct arch_machine_descriptor *)malloc(sizeof(struct arch_machine_descriptor));
@@ -271,7 +278,7 @@ int do_xarray_traverse(unsigned long ptr, int is_root, struct xarray_ops *ops)
 				" for xarrays on this architecture or kernel\n");
 	} else {
 		readmem(ptr + OFFSET(xarray_xa_head), KVADDR, &node_p,
-			sizeof(void *), "xarray xa_head", FAULT_ON_ERROR);
+			sizeof(node_p), "xarray xa_head", FAULT_ON_ERROR);
 		is_internal = ((node_p & XARRAY_TAG_MASK) == XARRAY_TAG_INTERNAL);
 		if (node_p & XARRAY_TAG_MASK)
 			node_p &= ~XARRAY_TAG_MASK;
@@ -285,7 +292,7 @@ int do_xarray_traverse(unsigned long ptr, int is_root, struct xarray_ops *ops)
 
 	if (kr_debug) {
 		fprintf(stdout, "xa_node.slots[%ld]\n", XA_CHUNK_SIZE);
-		fprintf(stdout, "pointer at %lx (is_root? %s):\n",
+		fprintf(stdout, "pointer at 0x%lx (is_root? %s):\n",
 			node_p, is_root ? "yes" : "no");
 #if 0
 		if (is_root)
