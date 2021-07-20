@@ -53,6 +53,8 @@ allocate_task_space(int cnt)
 
 char * fill_task_struct(unsigned long task)
 {
+	if (tt->task_struct == NULL)
+		tt->task_struct = (char *)malloc(ASSIGN_SIZE(task_struct));
 	if (!readmem(task, KVADDR, tt->task_struct, ASSIGN_SIZE(task_struct), "fill_task_struct",
 			RETURN_ON_ERROR)) {
 		tt->last_task_read = 0;
@@ -153,6 +155,10 @@ retry_xarray:
 		pid_tasks_0 = ULONG(pidbuf + OFFSET(pid_tasks));
 		if (!pid_tasks_0)
 			continue;
+		/*
+		 * FIXME
+		 * pids in task_struct is NOT valid member.
+		 */
 		if (VALID_MEMBER(task_struct_pids))
 			task_addr = pid_tasks_0 - OFFSET(task_struct_pids);
 		else
@@ -172,7 +178,9 @@ retry_xarray:
 		if (target != -1 && upid_ns == target)
 			goto find;
 	}
-
+	if (!task_addr) {
+		return NULL;
+	}
 find:
 	free(pidbuf);
 	tt->retries = MAX(tt->retries, retries);
@@ -182,7 +190,7 @@ find:
 
 void dump_task(pid_t pid)
 {
-	char *task;
+	char *task = NULL;
 	int pid_max;
 	char buf[] = "cat /proc/sys/kernel/pid_max";
 	char comm[TASK_COMM_LEN];
@@ -196,16 +204,13 @@ void dump_task(pid_t pid)
 	}
 	/* task is a physical address */
 	task = lookup_task_xarray_task_table(pid);
-
-	/*
-	 * dump comm pid
-	 */
-	if (!readmem(task, PHYSADDR, comm, TASK_COMM_LEN,
-				"comm", RETURN_ON_ERROR|QUIET)) {
-		fprintf(stderr, "\ncannot read comm from task_struct\n");
+	if (!task) {
+		ERROR("Not find task");
 		return;
 	}
-	printf("comm: %s\n", comm);
+
+	/* dump comm pid */
+	printf("comm: %s\n", task + OFFSET(comm);
 }
 
 void stat_pgtable(pid_t pid)
