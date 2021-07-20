@@ -678,10 +678,8 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 			break;
 		}
 	}
-	if (offset == UNINITIALIZED) {
-		ERROR("failed: read kcore error");
-		return READ_ERROR;
-	}
+	if (offset != UNINITIALIZED)
+		goto seek_ok;
 
 	for (i = 0; i < pkd->segments; i++) {
 		lp64 = pkd->load64 + i;
@@ -693,6 +691,7 @@ int read_proc_kcore(int fd, void *bufptr, int cnt, unsigned long addr, physaddr_
 		}
 	}
 
+seek_ok:
 	if (offset == UNINITIALIZED) {
 		ERROR("failed: seek error when read kcore");
 		return SEEK_ERROR;
@@ -739,7 +738,7 @@ int kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int 
 int readmem(ulonglong addr, int memtype, void *buffer, long size,
 	char *type, unsigned long error_handle)
 {
-	long cnt;
+	long cnt = size;
 	char *bufptr = (char *)buffer;
 	unsigned long paddr;
 
@@ -750,7 +749,7 @@ int readmem(ulonglong addr, int memtype, void *buffer, long size,
 		break;
 	case KVADDR:
 		if (!kvtop(CURRENT_CONTEXT(), addr, &paddr, 0)) {
-			ERROR("failed: readmem");
+			ERROR("failed: kvtop");
 			return FALSE;
 		}
 		break;
@@ -795,6 +794,7 @@ void symbols_init_from_kallsyms(void)
 	if (symbol_init_pid_ns == BADVAL) {
 		printf("failed: initial init_pid_ns");
 	}
+	tt->init_pid_ns = symbol_init_pid_ns;
 
 	symbol_init_task = lookup_symbol_from_proc_kallsyms("init_task");
 	if (symbol_init_task == BADVAL) {
@@ -878,7 +878,7 @@ long request_pahole(struct gnu_request *req)
 		else {
 			/* request member offset */
 			long size = request_pahole_member_number(req->name);
-			sprintf(buf, "pahole -JV %s | grep -A %d -m 1 %s|awk \'{if($1==\"%s\"){print $3}}\' | tr -d \"a-zA-Z=_\"",
+			sprintf(buf, "pahole -JV %s | grep -A %d -m 1 %s|awk \'{if($1==\"%s\"){print $NF}}\' | tr -d \"a-zA-Z=_\"",
 				current_vmlinux_path, size, req->name, req->member);
 			ret = exec_cmd_return_long(buf);
 			if (ret != -1)
