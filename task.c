@@ -89,6 +89,7 @@ static char * lookup_task_xarray_task_table(pid_t target)
 	char *tp;
 	struct list_pair xp;
 	char *pidbuf;
+	pid_t scan_pid;
 
 	curpid = NO_PID;
 	curtask = NO_TASK;
@@ -168,6 +169,8 @@ retry_xarray:
 			printf("pid: %lx  ns: %lx  tasks[0]: %lx task: %lx\n",
 				next, upid_ns, pid_tasks_0, task_addr);
 
+		readmem(task_addr + OFFSET(task_struct_pid), KVADDR, &scan_pid,
+			sizeof(pid_t), "pid", RETURN_ON_ERROR|QUIET);
 		if (!IS_TASK_ADDR(task_addr)) {
 			printf("IDR xarray: invalid task address: %lx\n", task_addr);
 			retries++;
@@ -175,12 +178,14 @@ retry_xarray:
 		}
 
 		cnt++;
-		if (target != -1 && upid_ns == target)
+		if (target != -1 && scan_pid == target)
 			goto find;
 	}
+
 	if (!task_addr) {
 		return NULL;
 	}
+
 find:
 	free(pidbuf);
 	tt->retries = MAX(tt->retries, retries);
@@ -210,7 +215,7 @@ void dump_task(pid_t pid)
 	}
 
 	/* dump comm pid */
-	printf("comm: %s\n", task + OFFSET(comm);
+	printf("comm: %s\n", task + OFFSET(task_struct_comm));
 }
 
 void stat_pgtable(pid_t pid)
