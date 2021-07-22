@@ -688,7 +688,6 @@ arm64_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, in
 static int
 arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, int verbose)
 {
-#if 0
 	unsigned long user_pgd;
 
 	readmem(tc->mm_struct + OFFSET(mm_struct_pgd), KVADDR,
@@ -696,7 +695,7 @@ arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, in
 
 	*paddr = 0;
 
-	switch (machdep->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K))
+	switch (kcoreinfo->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K))
 	{
 
 	case VM_L2_64K:
@@ -711,6 +710,5 @@ arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, in
 	default:
 		return FALSE;
 	}
-#endif
 }
 

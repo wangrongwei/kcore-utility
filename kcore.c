@@ -731,6 +731,22 @@ int kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int 
 #endif
 }
 
+int uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, int verbose)
+{
+	physaddr_t unused;
+
+#ifdef X86_64
+	return (x86_uvtop(tc ? tc : CURRENT_CONTEXT(), uvaddr,
+		paddr ? paddr : &unused, verbose));
+#elif defined(ARM64)
+	return (arm64_uvtop(tc ? tc : CURRENT_CONTEXT(), uvaddr,
+		paddr ? paddr : &unused, verbose));
+#else
+	printf("build error");
+	return FALSE;
+#endif
+}
+
 /*
  * First, we need translate addr into paddr. 'memtype' has following value:
  * 	KVADDR UADDR
@@ -745,7 +761,10 @@ int readmem(ulonglong addr, int memtype, void *buffer, long size,
 	/* translate addr into paddr */
 	switch (memtype) {
 	case UVADDR:
-		/* TODO */
+		if (!uvtop(CURRENT_CONTEXT(), addr, &paddr, 1)) {
+			ERROR("failed: uvtop");
+			return FALSE;
+		}
 		break;
 	case KVADDR:
 		if (!kvtop(CURRENT_CONTEXT(), addr, &paddr, 0)) {

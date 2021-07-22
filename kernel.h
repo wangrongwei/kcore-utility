@@ -50,8 +50,10 @@ extern int generic_is_uvaddr(unsigned long addr, struct task_context *tc);
 
 #ifdef X86_64
 extern int x86_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int verbose);
+extern int x86_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, int verbose);
 #elif defined(ARM64)
 extern int arm64_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, int verbose);
+extern int arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, int verbose);
 #endif
 
 #define IS_KVADDR(X)       (generic_is_kvaddr(X))
