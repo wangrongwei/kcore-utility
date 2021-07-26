@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "kcore.h"
 #include "kread.h"
+#include "gdb.h"
 #include "pgtable.h"
 
 #include "error.h"
@@ -71,6 +72,87 @@ arm64_calc_physvirt_offset(void)
 			kcoreinfo->mdesp->physvirt_offset = physvirt_offset;
 		}
 	}
+}
+
+void
+arm64_calc_phys_offset(void)
+{
+	struct arch_machine_descriptor *ms = kcoreinfo->mdesp;
+	unsigned long phys_offset;
+
+	if (kcoreinfo->flags & PHYS_OFFSET) /* --machdep override */
+		return;
+
+	/*
+	 * Next determine suitable value for phys_offset. User can override this
+	 * by passing valid '--machdep phys_offset=<addr>' option.
+	 */
+	ms->phys_offset = 0;
+
+	if (1) {
+		char buf[BUFSIZE];
+		char *p1;
+		int errflag;
+		FILE *iomem;
+		physaddr_t paddr;
+		unsigned long vaddr, sp;
+		char *string;
+
+		if ((kcoreinfo->flags & NEW_VMEMMAP)
+				&& ms->kimage_voffset
+				&& (sp = lookup_symbol_from_proc_kallsyms("memstart_addr"))) {
+			/* ONLY support PROC_KCORE */
+			if (1) {
+				vaddr = lookup_symbol_from_proc_kallsyms("memstart_addr");
+				if (vaddr == BADVAL)
+					vaddr = sp;
+				paddr = KCORE_USE_VADDR;
+			}
+			if (read_proc_kcore(kcore_fd, &phys_offset, sizeof(phys_offset),
+					vaddr, paddr) > 0) {
+				ms->phys_offset = phys_offset;
+				return;
+			}
+		}
+
+		if ((iomem = fopen("/proc/iomem", "r")) == NULL)
+			return;
+
+		/*
+		 * Memory regions are sorted in ascending order. We take the
+		 * first region which should be correct for most uses.
+		 */
+		errflag = 1;
+		while (fgets(buf, BUFSIZE, iomem)) {
+			if (strstr(buf, ": System RAM")) {
+				clean_line(buf);
+				errflag = 0;
+				break;
+			}
+		}
+		fclose(iomem);
+
+		if (errflag)
+			return;
+
+		if (!(p1 = strstr(buf, "-")))
+			return;
+
+		*p1 = NULLCHAR;
+
+		phys_offset = htol(buf, RETURN_ON_ERROR | QUIET, &errflag);
+		if (errflag)
+			return;
+
+		ms->phys_offset = phys_offset;
+	} else {
+		ERROR("phys_offset cannot be determined from the dumpfile.\n");
+		ERROR("Using default value of 0.  If this is not correct, then try\n");
+		ERROR("using the command line option: --machdep phys_offset=<addr>\n");
+	}
+
+	if (kr_debug)
+		fprintf(stdout, "using %lx as phys_offset\n", ms->phys_offset);
 }
 
 static void arm64_calc_kimage_voffset(void)
@@ -158,6 +240,11 @@ void arm64_kernel_init(void)
 	if (lookup_symbol_from_proc_kallsyms("kimage_voffset") != 0)
 		kcoreinfo->flags |= NEW_VMEMMAP;
 
+	kcoreinfo->pagesize = 4096;
+	kcoreinfo->pageshift = ffs(kcoreinfo->pagesize) - 1;
+	kcoreinfo->pageoffset = kcoreinfo->pagesize - 1;
+	kcoreinfo->pagemask = ~((ulonglong)kcoreinfo->pageoffset);
+
 	kcoreinfo->ptrs_per_pgd = PTRS_PER_PGD_L3_4K;
 	kcoreinfo->pgd = (char *)malloc(PTRS_PER_PGD_L3_4K * 8);
 	kcoreinfo->pud = (char *)malloc(PTRS_PER_PUD_L4_4K * 8);
@@ -188,6 +275,7 @@ void arm64_kernel_init(void)
 		kcoreinfo->mdesp->vmalloc_start_addr = ARM64_VA_START;
 	}
 	arm64_init_kernel_pgd();
+	arm64_calc_phys_offset();
 	arm64_calc_physvirt_offset();
 	kcoreinfo->mdesp->vmalloc_end = ARM64_VMALLOC_END;
 	kcoreinfo->mdesp->vmemmap_vaddr = ARM64_VMEMMAP_VADDR;
@@ -431,7 +519,7 @@ void lookup_vma_for_task(pid_t pid)
  * Translate a PTE, returning TRUE if the page is present.
  * If a physaddr pointer is passed in, don't print anything.
  */
-static int
+int
 arm64_translate_pte(unsigned long pte, void *physaddr, ulonglong unused)
 {
 	int c, others, len1, len2, len3;
@@ -479,6 +567,7 @@ arm64_translate_pte(unsigned long pte, void *physaddr, ulonglong unused)
 			mkstring(buf3, len3, CENTER|RJUST, NULL));
 		return page_present;
 #endif
+		return page_present;
 	}
 
 	sprintf(physbuf, "%lx", paddr);
@@ -685,7 +774,7 @@ arm64_kvtop(struct task_context *tc, unsigned long kvaddr, physaddr_t *paddr, in
 	}
 }
 
-static int
+int
 arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, int verbose)
 {
 	unsigned long user_pgd;

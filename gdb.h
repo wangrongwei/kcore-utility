@@ -108,5 +108,5 @@ struct gnu_request {
  */
 // extern void gdb_command_funnel(struct gnu_request *);
 extern void get_gdb_version(void);
-
+extern int ffs(register int valu);
 #endif

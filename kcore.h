@@ -129,6 +129,7 @@ static inline int string_exists(char *s) { return (s ? TRUE : FALSE); }
 #define STRNEQ(A, B)     (string_exists((char *)A) && string_exists((char *)B) && \
 	(strncmp((char *)(A), (char *)(B), strlen((char *)(B))) == 0))
 
+extern char *mkstring(char *s, int size, unsigned long flags, const char *opt);
 extern unsigned long htol(char *s, int flags, int *errptr);
 extern int file_exists(char *file, struct stat *sp);
 extern unsigned long lookup_symbol_from_proc_kallsyms(char *symname);

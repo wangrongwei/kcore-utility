@@ -12,6 +12,8 @@
 #include "common.h"
 #include "error.h"
 
+#define memmove(d, s, n) memcpy(d, s, n)
+
 #define MAX_KCORE_ELF_HEADER_SIZE (32768)
 #define PADDR_NOT_AVAILABLE (0x1ULL)
 #define KCORE_USE_VADDR      (-1ULL)
@@ -51,9 +53,8 @@ struct proc_kcore_data {
 #define _64BIT_
 #define MACHINE_TYPE "ARM64"
 
-//((unsigned long)(X) - (machdep->machspec->physvirt_offset))
 #define PTOV(X) \
-	((unsigned long)(X) - (0x10000))
+	((unsigned long)(X) - (kcoreinfo->mdesp->physvirt_offset))
 
 #define VTOP(X) arm64_VTOP((unsigned long)(X))
 #endif
@@ -62,9 +63,8 @@ struct proc_kcore_data {
 #define _64BIT_
 #define MACHINE_TYPE "x86_64"
 
-//((unsigned long)(X) - (machdep->machspec->physvirt_offset))
 #define PTOV(X) \
-	((unsigned long)(X) - (0x10000))
+	((unsigned long)(X) - (kcoreinfo->mdesp->physvirt_offset))
 
 //#define VTOP(X) arm64_VTOP((unsigned long)(X))
 #define VTOP(X) 0
@@ -85,6 +85,6 @@ extern void symbols_init_from_kallsyms(void);
 
 extern void dump_task(pid_t pid);
 extern void stat_pgtable(pid_t pid);
-extern void dump_pte(pid_t pid, unsigned long addr);
+extern void dump_pte(pid_t pid, unsigned long uvaddr);
 extern char *KERNEL_FILE[];
 #endif

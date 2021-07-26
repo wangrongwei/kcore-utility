@@ -223,8 +223,17 @@ void stat_pgtable(pid_t pid)
 	return;
 }
 
-void dump_pte(pid_t pid, unsigned long addr)
+void dump_pte(pid_t pid, unsigned long uvaddr)
 {
+	unsigned long mm, paddr;
+	struct task_context target_context;
+
+	if (tt->last_task_read == 0) {
+		ERROR("dump pte failed, task address is not setting");
+	}
+
+	target_context.mm_struct = ULONG(tt->task_struct + OFFSET(task_struct_mm));
+	uvtop(&target_context, uvaddr, &paddr, 1);
 	return;
 }
 
