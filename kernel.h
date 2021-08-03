@@ -244,7 +244,7 @@ struct offset_table {       /* stash of commonly-used offsets */
 	long page_inode;
 	long page_offset;
 	long page_count;
-	long page_flags;
+	long page_flags; /* will be used for pgtable dump */
 	long page_mapping;
 	long page_index;
 	long page_buffers;

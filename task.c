@@ -1,6 +1,7 @@
 #include "common.h"
 #include "kcore.h"
 #include "kernel.h"
+#include "mm.h"
 
 #include "error.h"
 
@@ -218,8 +219,96 @@ void dump_task(pid_t pid)
 	printf("comm: %s\n", task + OFFSET(task_struct_comm));
 }
 
+void *init_vma(pid_t pid, int *nr_vma)
+{
+	int maps_lines;
+	char buf[100]={0};
+	struct vma *vma_array;
+
+	sprintf(buf, "cat /proc/%d/maps | awk \'END{print NR}\'", pid);
+	maps_lines = exec_cmd_return_long(buf);
+	*nr_vma = maps_lines;
+	vma_array = (struct vma*)malloc(maps_lines * sizeof(struct vma));
+	for (int i=0; i<maps_lines; i++) {
+		memset(buf, '\0', 100);
+		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $1}\'", i+1, pid);
+		vma_array[i].start_addr = exec_cmd_return_long(buf);
+		memset(buf, '\0', 100);
+		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $2}\'", i+1, pid);
+		vma_array[i].end_addr = exec_cmd_return_long(buf);
+		memset(buf, '\0', 100);
+		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | awk \'{print $2}\'", i+1, pid);
+		vma_array[i].prot = exec_cmd_return_string(buf);
+	}
+
+	return vma_array;
+}
+
+#define NODES_SHIFT 3
+#define NODES_WIDTH		NODES_SHIFT
+#define NODES_MASK		((1UL << NODES_WIDTH) - 1)
+
+#define SECTIONS_WIDTH 0
+#define SECTIONS_PGOFF		((sizeof(unsigned long)*8) - SECTIONS_WIDTH)
+#define NODES_PGOFF		(SECTIONS_PGOFF - NODES_WIDTH)
+#define NODES_PGSHIFT		(NODES_PGOFF * (NODES_WIDTH != 0))
+
+/*
+ * This function is mainly to convert page_flags into
+ * node number.
+ *
+ * In most time, the kernel config will affect this
+ * function. The below function depend on:
+ * 	1. CONFIG_SPARSEMEM=y
+ * 	2. CONFIG_VMEMMAP=y
+ * 	3. CONFIG_NODES_SHIFT=3
+ */
+static inline int page_to_nid(long page_flags)
+{
+	return (page_flags >> NODES_PGSHIFT) & NODES_MASK;
+}
+
+/*
+ * Show the distribution of pgtable.
+ *
+ * static inline int page_to_nid(const struct page *page)
+ * {
+ * 	struct page *p = (struct page *)page;
+ *
+ * 	return (PF_POISONED_CHECK(p)->flags >> NODES_PGSHIFT) & NODES_MASK;
+ * }
+ *
+ * Consider the difference of data, such as text, data and DSOs pgtable.
+ * And the different data maybe have various of affect. So, it is necessary
+ * to stat each of pgtable separately.
+ */
 void stat_pgtable(pid_t pid)
 {
+	struct vma *vma;
+	struct node_stat pgtable_stat[4];
+	long flags;
+	int nr_vma = 0;
+
+	STRUCT_SIZE_INIT(page, "page");
+	MEMBER_OFFSET_INIT(page_flags, "page", "page_flags");
+
+	vma = init_vma(pid, &nr_vma);
+	long sz = PAGE_SIZE;
+	for(int i=0; i<nr_vma; i++) {
+		for (long addr=vma[i].start_addr; addr<vma[i].end_addr; addr += sz) {
+			arm64_get_pgtable(NULL, addr, &flags, &sz, 1);
+			pgtable_stat[page_to_nid(flags)].nr++;
+		}
+	}
+
+	/*
+	 * FIXME: The number of node is required from system, not set 4
+	 * directly.
+	 */
+	printf("pgtable stat:\n");
+	for (int i=0; i<4; i++) {
+		printf("node %d: %d\n", i, pgtable_stat[i].nr);
+	}
 	return;
 }
 

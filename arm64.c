@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "kcore.h"
 #include "kread.h"
+#include "mm.h"
 #include "gdb.h"
 #include "pgtable.h"
 
@@ -801,3 +802,104 @@ arm64_uvtop(struct task_context *tc, unsigned long uvaddr, physaddr_t *paddr, in
 	}
 }
 
+/*
+ * return 4k or 2M.
+ */
+static int
+arm64_pgtable_4level_4k(unsigned long pgd, unsigned long vaddr,
+	long *pfn, long *sz, int verbose)
+{
+	unsigned long *pgd_base, *pgd_ptr, pgd_val;
+	unsigned long *pud_base, *pud_ptr, pud_val;
+	unsigned long *pmd_base, *pmd_ptr, pmd_val;
+	unsigned long *pte_base, *pte_ptr, pte_val;
+
+	if (verbose)
+		fprintf(stdout, "PAGE DIRECTORY: %lx\n", pgd);
+
+	pgd_base = (unsigned long *)pgd;
+	FILL_PGD(pgd_base, KVADDR, PTRS_PER_PGD_L4_4K * sizeof(unsigned long));
+	pgd_ptr = pgd_base + (((vaddr) >> PGDIR_SHIFT_L4_4K) & (PTRS_PER_PGD_L4_4K - 1));
+	pgd_val = ULONG(kcoreinfo->pgd + PGDIR_OFFSET_48VA(pgd_ptr));
+	if (verbose)
+		fprintf(stdout, "   PGD: %lx => %lx\n", (unsigned long)pgd_ptr, pgd_val);
+	if (!pgd_val)
+		goto no_page;
+
+	pud_base = (unsigned long *)PTOV(pgd_val & PHYS_MASK & PGDIR_MASK_48VA);
+
+	FILL_PUD(pud_base, KVADDR, PTRS_PER_PUD_L4_4K * sizeof(unsigned long));
+	pud_ptr = pud_base + (((vaddr) >> PUD_SHIFT_L4_4K) & (PTRS_PER_PUD_L4_4K - 1));
+	pud_val = ULONG(kcoreinfo->pud + PAGEOFFSET(pud_ptr));
+	if (verbose)
+		fprintf(stdout, "   PUD: %lx => %lx\n", (unsigned long)pud_ptr, pud_val);
+	if (!pud_val)
+		goto no_page;
+
+	pmd_base = (unsigned long *)PTOV(pud_val & PHYS_MASK & (s32)kcoreinfo->pagemask);
+	FILL_PMD(pmd_base, KVADDR, PTRS_PER_PMD_L4_4K * sizeof(unsigned long));
+	pmd_ptr = pmd_base + (((vaddr) >> PMD_SHIFT_L4_4K) & (PTRS_PER_PMD_L4_4K - 1));
+	pmd_val = ULONG(kcoreinfo->pmd + PAGEOFFSET(pmd_ptr));
+	if (verbose)
+		fprintf(stdout, "   PMD: %lx => %lx\n", (unsigned long)pmd_ptr, pmd_val);
+	if (!pmd_val)
+		goto no_page;
+
+	if ((pmd_val & PMD_TYPE_MASK) == PMD_TYPE_SECT) {
+		/* the last pgtable is PUD */
+		*pfn = pud_val;
+		*sz = PAGE_SIZE_2MB;
+		return TRUE;
+	}
+
+	pte_base = (unsigned long *)PTOV(pmd_val & PHYS_MASK & (s32)kcoreinfo->pagemask);
+	FILL_PTBL(pte_base, KVADDR, PTRS_PER_PTE_L4_4K * sizeof(unsigned long));
+	pte_ptr = pte_base + (((vaddr) >> kcoreinfo->pageshift) & (PTRS_PER_PTE_L4_4K - 1));
+	pte_val = ULONG(kcoreinfo->ptbl + PAGEOFFSET(pte_ptr));
+	if (verbose) {
+		/* The last pgtable is PMD */
+		*pfn = (pmd_val & SECTION_PAGE_MASK_2MB) & PHYS_MASK;
+		*sz = PAGE_SIZE;
+	}
+	if (!pte_val)
+		goto no_page;
+
+	return TRUE;
+no_page:
+	return FALSE;
+}
+
+long pfn_to_page(long pfn)
+{
+	return kcoreinfo->mdesp->vmemmap_vaddr + pfn;
+}
+
+int arm64_get_pgtable(struct task_context *tc, unsigned long uvaddr,
+	long *flags, long *sz, int verbose)
+{
+	unsigned long user_pgd, pfn;
+	int ret;
+
+	readmem(tc->mm_struct + OFFSET(mm_struct_pgd), KVADDR,
+		&user_pgd, sizeof(long), "user pgd", FAULT_ON_ERROR);
+
+	switch (kcoreinfo->flags & (VM_L2_64K|VM_L3_64K|VM_L3_4K|VM_L4_4K)) {
+	case VM_L2_64K:
+		return FALSE;
+	case VM_L3_64K:
+		return FALSE;
+	case VM_L3_4K:
+		return FALSE;
+	case VM_L4_4K:
+		ret = arm64_pgtable_4level_4k(user_pgd, uvaddr, &pfn, sz, verbose);
+	default:
+		return FALSE;
+	}
+
+	char *page = (char *)malloc(ASSIGN_SIZE(page));
+	long page_kvaddr = pfn_to_page(pfn);
+	readmem(page_kvaddr, KVADDR, page, ASSIGN_SIZE(page), "page", FAULT_ON_ERROR);
+	*flags = ULONG(page + OFFSET(page_flags));
+	free(page);
+	return TRUE;
+}
