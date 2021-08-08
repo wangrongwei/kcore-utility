@@ -293,10 +293,16 @@ void stat_pgtable(pid_t pid)
 	MEMBER_OFFSET_INIT(page_flags, "page", "flags");
 
 	vma = init_vma(pid, &nr_vma);
+
 	unsigned long sz = PAGE_SIZE;
+	memset(pgtable_stat, 0, sizeof(pgtable_stat));
 	for(int i=0; i<nr_vma; i++) {
 		for (long addr=vma[i].start_addr; addr<vma[i].end_addr; addr += sz) {
 			arm64_get_pgtable(NULL, addr, &flags, &sz, 1);
+			if (page_to_nid(flags) >= 4) {
+				printf("error, the nid over 4\n");
+				goto out;
+			}
 			pgtable_stat[page_to_nid(flags)].nr++;
 		}
 	}
@@ -309,7 +315,7 @@ void stat_pgtable(pid_t pid)
 	for (int i=0; i<4; i++) {
 		printf("node %d: %d\n", i, pgtable_stat[i].nr);
 	}
-
+out:
 	return;
 }
 
