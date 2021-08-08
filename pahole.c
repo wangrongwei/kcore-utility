@@ -43,6 +43,44 @@ long exec_cmd_return_long(char *cmd)
 	return strtol(buf, NULL, 0);
 }
 
+unsigned long exec_cmd_return_ulong(char *cmd)
+{
+	char buf[100] = {'\0'};
+	int des_p[2], pid;
+	int nbytes;
+
+	if(pipe(des_p) == -1) {
+		perror("Pipe failed");
+		exit(1);
+	}
+
+	pid = fork();
+	if(pid == 0) {
+		close(STDOUT_FILENO);
+		/* replacing stdout with pipe write */
+		dup2(des_p[1], STDOUT_FILENO);
+		close(des_p[0]);
+
+		system(cmd);
+		exit(0);
+	} else {
+		/* parent */
+		int status;
+		close(des_p[1]);
+		waitpid(pid, &status, 0);
+		nbytes = read(des_p[0], buf, sizeof(buf));
+		if (kr_debug) {
+			printf("cmd: %s\n", cmd);
+			printf("struct size: %s\n", buf);
+		}
+		if (buf[0] == '\0') {
+			return -1;
+		}
+	}
+
+	return strtoul(buf, NULL, 0);
+}
+
 char *exec_cmd_return_string(char *cmd)
 {
 	char buf[100] = {'\0'};

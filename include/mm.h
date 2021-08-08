@@ -5,8 +5,8 @@
 #define PAGE_SIZE_2MB (2*1024*1024)
 
 struct vma {
-	long start_addr;
-	long end_addr;
+	unsigned long start_addr;
+	unsigned long end_addr;
 	char *prot;
 };
 

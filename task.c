@@ -212,6 +212,7 @@ void dump_task(pid_t pid)
 	task = lookup_task_xarray_task_table(pid);
 	if (!task) {
 		ERROR("Not find task");
+		exit(-1);
 		return;
 	}
 
@@ -232,10 +233,10 @@ void *init_vma(pid_t pid, int *nr_vma)
 	for (int i=0; i<maps_lines; i++) {
 		memset(buf, '\0', 100);
 		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $1}\'", pid, i+1, pid);
-		vma_array[i].start_addr = exec_cmd_return_long(buf);
+		vma_array[i].start_addr = exec_cmd_return_ulong(buf);
 		memset(buf, '\0', 100);
 		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $2}\'", pid, i+1, pid);
-		vma_array[i].end_addr = exec_cmd_return_long(buf);
+		vma_array[i].end_addr = exec_cmd_return_ulong(buf);
 		memset(buf, '\0', 100);
 		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | awk \'{print $2}\'", pid, i+1, pid);
 		vma_array[i].prot = exec_cmd_return_string(buf);
