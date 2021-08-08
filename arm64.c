@@ -875,7 +875,7 @@ long pfn_to_page(long pfn)
 }
 
 int arm64_get_pgtable(struct task_context *tc, unsigned long uvaddr,
-	long *flags, long *sz, int verbose)
+	unsigned long *flags, long *sz, int verbose)
 {
 	unsigned long user_pgd, pfn;
 	int ret;

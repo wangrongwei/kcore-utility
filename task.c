@@ -231,13 +231,13 @@ void *init_vma(pid_t pid, int *nr_vma)
 	vma_array = (struct vma*)malloc(maps_lines * sizeof(struct vma));
 	for (int i=0; i<maps_lines; i++) {
 		memset(buf, '\0', 100);
-		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $1}\'", i+1, pid);
+		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $1}\'", pid, i+1, pid);
 		vma_array[i].start_addr = exec_cmd_return_long(buf);
 		memset(buf, '\0', 100);
-		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $2}\'", i+1, pid);
+		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $2}\'", pid, i+1, pid);
 		vma_array[i].end_addr = exec_cmd_return_long(buf);
 		memset(buf, '\0', 100);
-		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | awk \'{print $2}\'", i+1, pid);
+		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | awk \'{print $2}\'", pid, i+1, pid);
 		vma_array[i].prot = exec_cmd_return_string(buf);
 	}
 
@@ -286,14 +286,14 @@ void stat_pgtable(pid_t pid)
 {
 	struct vma *vma;
 	struct node_stat pgtable_stat[4];
-	long flags;
+	unsigned long flags;
 	int nr_vma = 0;
 
 	STRUCT_SIZE_INIT(page, "page");
-	MEMBER_OFFSET_INIT(page_flags, "page", "page_flags");
+	MEMBER_OFFSET_INIT(page_flags, "page", "flags");
 
 	vma = init_vma(pid, &nr_vma);
-	long sz = PAGE_SIZE;
+	unsigned long sz = PAGE_SIZE;
 	for(int i=0; i<nr_vma; i++) {
 		for (long addr=vma[i].start_addr; addr<vma[i].end_addr; addr += sz) {
 			arm64_get_pgtable(NULL, addr, &flags, &sz, 1);
@@ -305,10 +305,11 @@ void stat_pgtable(pid_t pid)
 	 * FIXME: The number of node is required from system, not set 4
 	 * directly.
 	 */
-	printf("pgtable stat:\n");
+	printf("leaf pgtable stat:\n");
 	for (int i=0; i<4; i++) {
 		printf("node %d: %d\n", i, pgtable_stat[i].nr);
 	}
+
 	return;
 }
 
@@ -323,6 +324,7 @@ void dump_pte(pid_t pid, unsigned long uvaddr)
 
 	target_context.mm_struct = ULONG(tt->task_struct + OFFSET(task_struct_mm));
 	uvtop(&target_context, uvaddr, &paddr, 1);
+
 	return;
 }
 
