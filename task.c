@@ -285,12 +285,14 @@ static inline int page_to_nid(long page_flags)
 void stat_pgtable(pid_t pid)
 {
 	struct vma *vma;
+	struct task_context target_context;
 	struct node_stat pgtable_stat[4];
 	unsigned long flags;
 	int nr_vma = 0;
 
 	STRUCT_SIZE_INIT(page, "page");
 	MEMBER_OFFSET_INIT(page_flags, "page", "flags");
+	target_context.mm_struct = ULONG(tt->task_struct + OFFSET(task_struct_mm));
 
 	vma = init_vma(pid, &nr_vma);
 
@@ -298,7 +300,7 @@ void stat_pgtable(pid_t pid)
 	memset(pgtable_stat, 0, sizeof(pgtable_stat));
 	for(int i=0; i<nr_vma; i++) {
 		for (long addr=vma[i].start_addr; addr<vma[i].end_addr; addr += sz) {
-			arm64_get_pgtable(NULL, addr, &flags, &sz, 1);
+			arm64_get_pgtable(&target_context, addr, &flags, &sz, 1);
 			if (page_to_nid(flags) >= 4) {
 				printf("error, the nid over 4\n");
 				goto out;
