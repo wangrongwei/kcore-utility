@@ -11,6 +11,10 @@
 struct task_table task_table = { 0 };
 struct task_table *tt = &task_table;
 
+extern char *exec_cmd_return_string(char *cmd);
+extern long exec_cmd_return_long(char *cmd, int base);
+extern unsigned long exec_cmd_return_ulong(char *cmd, int base);
+
 /*
  *  Allocate or re-allocated space for the task_context array and task list.
  */
@@ -300,8 +304,8 @@ void stat_pgtable(pid_t pid)
 	unsigned long sz = PAGE_SIZE;
 	memset(pgtable_stat, 0, sizeof(pgtable_stat));
 	for(int i=0; i<nr_vma; i++) {
-		for (long addr=vma[i].start_addr; addr<vma[i].end_addr; addr += sz) {
-			arm64_get_pgtable(&target_context, addr, &flags, &sz, 1);
+		for (unsigned long addr=vma[i].start_addr; addr<vma[i].end_addr; addr += sz) {
+			arm64_get_pgtable(&target_context, addr, &flags, &sz, 0);
 			if (page_to_nid(flags) >= 4) {
 				printf("error, the nid over 4\n");
 				goto out;

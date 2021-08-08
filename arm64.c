@@ -892,6 +892,8 @@ int arm64_get_pgtable(struct task_context *tc, unsigned long uvaddr,
 		return FALSE;
 	case VM_L4_4K:
 		ret = arm64_pgtable_4level_4k(user_pgd, uvaddr, &pfn, sz, verbose);
+		if (!ret)
+			return FALSE;
 	default:
 		return FALSE;
 	}
@@ -901,5 +903,6 @@ int arm64_get_pgtable(struct task_context *tc, unsigned long uvaddr,
 	readmem(page_kvaddr, KVADDR, page, ASSIGN_SIZE(page), "page", FAULT_ON_ERROR);
 	*flags = ULONG(page + OFFSET(page_flags));
 	free(page);
+
 	return TRUE;
 }
