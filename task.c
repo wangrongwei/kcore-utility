@@ -203,7 +203,7 @@ void dump_task(pid_t pid)
 
 	MEMBER_OFFSET_INIT(task_struct_comm, "task_struct", "comm");
 	MEMBER_OFFSET_INIT(task_struct_pid, "task_struct", "pid");
-	pid_max = exec_cmd_return_long(buf);
+	pid_max = exec_cmd_return_long(buf, 0);
 	if (pid > pid_max) {
 		fprintf(stderr, "pid: %d beyond pid_max (%d)", pid, pid_max);
 		return;
@@ -227,16 +227,16 @@ void *init_vma(pid_t pid, int *nr_vma)
 	struct vma *vma_array;
 
 	sprintf(buf, "cat /proc/%d/maps | awk \'END{print NR}\'", pid);
-	maps_lines = exec_cmd_return_long(buf);
+	maps_lines = exec_cmd_return_long(buf, 0);
 	*nr_vma = maps_lines;
 	vma_array = (struct vma*)malloc(maps_lines * sizeof(struct vma));
 	for (int i=0; i<maps_lines; i++) {
 		memset(buf, '\0', 100);
 		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $1}\'", pid, i+1, pid);
-		vma_array[i].start_addr = exec_cmd_return_ulong(buf);
+		vma_array[i].start_addr = exec_cmd_return_ulong(buf, 16);
 		memset(buf, '\0', 100);
 		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | tr \'-\' \' \' | awk \'{print $2}\'", pid, i+1, pid);
-		vma_array[i].end_addr = exec_cmd_return_ulong(buf);
+		vma_array[i].end_addr = exec_cmd_return_ulong(buf, 16);
 		memset(buf, '\0', 100);
 		sprintf(buf, "cat /proc/%d/maps | awk \'NR==%d\' | awk \'{print $2}\'", pid, i+1, pid);
 		vma_array[i].prot = exec_cmd_return_string(buf);

@@ -5,7 +5,7 @@
 
 #include "gdb.h"
 
-long exec_cmd_return_long(char *cmd)
+long exec_cmd_return_long(char *cmd, int base)
 {
 	char buf[100] = {'\0'};
 	int des_p[2], pid;
@@ -40,10 +40,10 @@ long exec_cmd_return_long(char *cmd)
 		}
 	}
 
-	return strtol(buf, NULL, 0);
+	return strtol(buf, NULL, base);
 }
 
-unsigned long exec_cmd_return_ulong(char *cmd)
+unsigned long exec_cmd_return_ulong(char *cmd, int base)
 {
 	char buf[100] = {'\0'};
 	int des_p[2], pid;
@@ -78,7 +78,7 @@ unsigned long exec_cmd_return_ulong(char *cmd)
 		}
 	}
 
-	return strtoul(buf, NULL, 0);
+	return strtoul(buf, NULL, base);
 }
 
 char *exec_cmd_return_string(char *cmd)
@@ -126,8 +126,6 @@ long request_pahole_member_number(char *name)
 
 	sprintf(buf, "pahole %s -n|grep -m 1 %s|awk \'{print $2}\'",
 		current_vmlinux_path, name);
-	size = exec_cmd_return_long(buf);
+	size = exec_cmd_return_long(buf, 0);
 	return size;
 }
-
-

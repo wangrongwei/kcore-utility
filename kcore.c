@@ -899,7 +899,7 @@ long request_pahole(struct gnu_request *req)
 			long size = request_pahole_member_number(req->name);
 			sprintf(buf, "pahole -JV %s | grep -A %d -m 1 %s|awk \'{if($1==\"%s\"){print $NF}}\' | tr -d \"a-zA-Z=_\"",
 				current_vmlinux_path, size, req->name, req->member);
-			ret = exec_cmd_return_long(buf);
+			ret = exec_cmd_return_long(buf, 0);
 			if (ret != -1)
 				ret /= 8;
 			else {
@@ -908,7 +908,7 @@ long request_pahole(struct gnu_request *req)
 				/* pahole -V %s -C %s | grep -m 1 %s|sed 's/.*\(.................\)$/\1/' */
 				sprintf(buf, "pahole -V %s -C %s | grep -m 1 %s|sed \'s/.*\\(.................\\)$/\\1/\'|awk \'{print $2}\'",
 					current_vmlinux_path, req->name, req->member);
-				ret = exec_cmd_return_long(buf);
+				ret = exec_cmd_return_long(buf, 0);
 				if (ret == -1)
 					goto tried_and_failed;
 				/* success */
@@ -924,7 +924,7 @@ long request_pahole(struct gnu_request *req)
 		printf("something error!");
 	break;
 	}
-	ret = exec_cmd_return_long(buf);
+	ret = exec_cmd_return_long(buf, 0);
 success:
 	return ret;
 tried_and_failed:
